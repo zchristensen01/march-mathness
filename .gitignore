@@ -1,0 +1,10 @@
+.env
+data/teams_input*.csv
+data/team_names.txt
+data/historical/
+data/*.json
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+outputs/

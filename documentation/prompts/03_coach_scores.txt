@@ -1,0 +1,52 @@
+TASK: Coach Tournament Experience Scores
+WHEN TO RUN: After the bracket is announced (any time before running the app)
+OUTPUT FORMAT: JSON saved as data/coach_scores.json
+TIME: ~5 minutes
+
+
+PROMPT TO SEND TO CLAUDE RESEARCH
+==================================
+
+For each of the 68 teams in the 2026 NCAA Men's Basketball Tournament, look up who their current head coach is and score that coach's tournament experience on a 0 to 10 scale.
+
+Scoring rubric (add up the points, cap at 10):
+
+  +3 points if the coach has been to the Final Four 2 or more times
+  +2 points if the coach has won a national championship
+  +2 points if the coach has 15 or more NCAA Tournament appearances as a head coach
+  +2 points if the coach has made the Sweet 16 3 or more times
+  +1 point if the coach has 500 or more career wins
+
+Output a JSON object where each key is a team name and each value is the score. Only include teams whose coach scores above 3. Every team not listed defaults to 3.
+
+Start the JSON with a _default key set to 3.
+
+Example format:
+
+{
+  "_default": 3,
+  "Duke": 9,
+  "Kansas": 10,
+  "Michigan State": 10
+}
+
+IMPORTANT: Use ONLY team names from the list below.
+
+Output ONLY the JSON. No explanations.
+
+
+TEAM NAME LIST
+==============
+[After running fetch_data.py, paste the contents of data/team_names.txt here]
+
+
+WHAT TO DO WITH THE OUTPUT
+==========================
+
+1. Save the JSON output as data/coach_scores.json
+
+2. Make sure the _default key is present and set to 3.
+
+3. Verify team names match data/teams_input.csv exactly. Fix any mismatches.
+
+4. If a coach recently changed programs (hired in the last year), make sure the score reflects the new coach, not the previous one.

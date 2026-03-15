@@ -1,0 +1,57 @@
+---
+description: Critical implementation rules for the engine pipeline modules
+globs: engine/**/*.py
+alwaysApply: false
+---
+
+# Engine Implementation Rules
+
+## Normalization — Get Directions Right
+
+- **SOS is a rank** (1 = hardest): use `normalize_inverse(SOS, 1, 365)`. Previous codebase had this backwards.
+- **AdjD is inverse**: lower raw = better defense → `normalize_inverse`.
+- All normalization ranges are defined in `ALGORITHM.md` Section 0.2. Use them exactly.
+- NaN/None → return `0.5` (neutral), never crash.
+
+## AdjEM Must Exist First
+
+Compute `AdjEM = AdjO - AdjD` before any normalization or scoring. Many downstream calculations assume it exists.
+
+## Win Probability
+
+- Blended: `0.60 × normal_CDF + 0.40 × elo_style`. This is the primary function used everywhere.
+- **Always clip to [0.03, 0.97]** — never allow exactly 0.0 or 1.0.
+- Predicted spread: `(AdjEM_a - AdjEM_b) × avg_tempo / 100`.
+
+## Score Scope Guards
+
+- `CinderellaScore`: only compute for Seed ≥ 9. Return `None`/empty for seeds 1–8.
+- `FraudScore`: only compute for Seed ≤ 6. Return `None`/empty for seeds 7–16.
+- `GiantKiller` rankings: only seeds ≥ 6.
+- These are intentional business rules, not bugs.
+
+## Monte Carlo Performance
+
+- Convert DataFrame to `list[dict]` before the simulation loop. Dict access is ~10× faster than `df.loc[]` over 630K iterations.
+- Set BOTH `random.seed(seed)` AND `numpy.random.seed(seed)` at start of `simulate_bracket()`.
+- Strategy brackets are deterministic (one winner per game). Monte Carlo produces probability distributions. Build them separately.
+
+## No Randomness in Defaults
+
+Never use `random.uniform()` for default values. Use fixed constants from `DATA_SCHEMA.md` Section 1.6.
+
+## Luck Metric — Always Available
+
+Always compute `Luck = WinPct - Barthag` from Torvik data. No external dependency. Fraud Score depends on this (25% weight).
+
+## CSI Is a Residual Correction
+
+Conference strength is already embedded in AdjEM (Torvik's model solves cross-conference comparison simultaneously). The JSON multipliers are a residual correction only — do not double-count.
+
+## WAB Alias
+
+Torvik sometimes exports as `wAB` instead of `WAB`. Handle in `normalize_aliases()`.
+
+## ESPN API Fallback
+
+Wrap every ESPN API call in try/except. Works from real computers but may be blocked in CI/sandbox. Always fall back to `data/tournament_results.json`.

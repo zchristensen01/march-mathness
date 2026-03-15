@@ -1,0 +1,123 @@
+TASK: Tournament Injury Report
+WHEN TO RUN: The night before the tournament starts (Wednesday or Thursday)
+OUTPUT FORMAT: JSON saved as data/overrides.json
+TIME: ~5 minutes
+
+
+PROMPT TO SEND TO CLAUDE RESEARCH
+==================================
+
+What are the significant injuries or player absences affecting teams in the 2026 NCAA Men's Basketball Tournament right now?
+
+For each injured or absent player who is a starter or key rotation player, I need:
+
+- The team name
+- The player's name and role (starter, sixth man, key reserve)
+- Their status (out, doubtful, questionable, returning from injury)
+- Two impact estimates:
+
+  AdjEM impact (how much weaker the team is overall):
+    Star player or best player completely out: -4 to -6
+    Starting guard or key starter out: -1.5 to -3
+    Rotation player out: -0.5 to -1.5
+    Key player returning from extended absence: +1 to +2
+
+  Star_Player_Index impact (how much the team loses in star power):
+    Projected top-5 NBA pick out: -4 to -5
+    Projected lottery pick out: -3 to -4
+    All-Conference caliber starter out: -1 to -2
+    Rotation player out: 0 (no star impact)
+    Star player returning from absence: +1 to +2
+
+Format the output as JSON using this exact structure:
+
+{
+  "Team Name": {
+    "mode": "delta",
+    "AdjEM": -4.0,
+    "Star_Player_Index": -4.0,
+    "note": "Player Name (role) -- status and brief explanation"
+  }
+}
+
+Include BOTH AdjEM and Star_Player_Index fields for every entry. If the injured player is not a star (rotation player), set Star_Player_Index to 0 but still include the AdjEM impact.
+
+If a team has a player returning from injury, both values should be positive.
+
+Only include teams with injuries that would actually change their tournament performance. Do not include minor bumps or players listed as probable.
+
+If there are no significant tournament injuries, output an empty JSON object: {}
+
+IMPORTANT: Use ONLY team names from the list below.
+
+Output ONLY the JSON. No explanations.
+
+
+TEAM NAME LIST
+==============
+[After running fetch_data.py, paste the contents of data/team_names.txt here]
+
+
+WHAT TO DO WITH THE OUTPUT
+==========================
+
+1. Save the JSON output as data/overrides.json
+
+2. Verify team names match data/teams_input.csv exactly.
+
+3. Review the adjustments. The two numbers interact like this:
+
+   AdjEM reduction: Makes the team objectively weaker. Every game they play,
+   their win probability drops. A -4 AdjEM swing is roughly equivalent to
+   being a full seed line worse (a 2-seed playing like a 3-seed).
+
+   Star_Player_Index reduction: Changes how the model evaluates the team.
+   A team that had a 9-rated star and now has no star (effectively a 5)
+   will score lower in the power rankings and be treated differently
+   by the upset-prediction and fraud-detection systems.
+
+   Both adjustments are applied. They are not redundant -- they affect
+   different parts of the model. AdjEM affects win probability directly.
+   Star_Player_Index affects model scoring, fraud detection, and
+   bracket strategy picks.
+
+4. If there are no injuries, save an empty file with just: {}
+
+5. You can re-run this prompt during the tournament to update for new injuries.
+
+
+EXAMPLE
+=======
+
+If Duke's best player (Star_Player_Index = 9) tears his ACL and is out:
+
+{
+  "Duke": {
+    "mode": "delta",
+    "AdjEM": -5.0,
+    "Star_Player_Index": -4.0,
+    "note": "Cooper Flagg (starter, projected #1 pick) -- out for tournament, ACL"
+  }
+}
+
+This means:
+- Duke's AdjEM drops by 5 points (huge -- roughly equivalent to dropping 2 seed lines)
+- Duke's Star_Player_Index goes from 9 to 5 (average, no star)
+- Duke's win probability in every game drops substantially
+- Duke no longer gets the star-player boost in power rankings
+- Duke's Fraud Score star-dependence component recalculates with the lower star rating
+
+If a key role player (not a star) on Kansas sprains an ankle and is doubtful:
+
+{
+  "Kansas": {
+    "mode": "delta",
+    "AdjEM": -1.5,
+    "Star_Player_Index": 0,
+    "note": "John Smith (rotation guard) -- doubtful, ankle sprain"
+  }
+}
+
+This means:
+- Kansas is slightly weaker overall (-1.5 AdjEM)
+- No change to star player evaluation (rotation player, not a star)

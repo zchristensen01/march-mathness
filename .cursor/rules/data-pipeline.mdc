@@ -1,0 +1,40 @@
+---
+description: Data ingestion, fetch scripts, and external API rules
+globs: "{engine/ingestion.py,scripts/*.py,data/**}"
+alwaysApply: false
+---
+
+# Data Pipeline Rules
+
+## Column Aliases
+
+Map all alternate names to canonical names in `normalize_aliases()`. Full alias map is in `DATA_SCHEMA.md` Section 11. Critical: `wAB → WAB`.
+
+## Default Values
+
+All defaults are fixed constants from `DATA_SCHEMA.md` Section 1.6. Zero randomness — no `random.random()` anywhere in ingestion.
+
+## Overrides
+
+- `overrides.json` format: `{"TeamName": {"mode": "delta"|"absolute", "AdjEM": -3.5, "note": "reason"}}`
+- Set `OverrideActive = 1` flag on any team with active overrides.
+- Apply overrides AFTER alias normalization and defaults, BEFORE scoring.
+
+## Torvik / Massey Fetch
+
+Use `cloudscraper.create_scraper().get()` — plain `requests.get()` returns 403 (Cloudflare). This is confirmed by live testing.
+
+## Luck Metric
+
+Always computed from Torvik data: `Luck = WinPct - Barthag`. No external dependency. This feeds Fraud Score at 25% weight.
+
+## Data Validation
+
+`validate_columns(df)` returns list of missing required columns. Empty list = clean. Surface clear error messages for missing/malformed data — never silently proceed with bad data.
+
+## Input Files (never commit to git)
+
+- `data/teams_input.csv` — primary input, one row per team
+- `data/bracket_input.json` — post-bracket: seeds, regions, slots
+- `data/overrides.json` — injury adjustments
+- `.env` — environment config (optional)

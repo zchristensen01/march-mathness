@@ -1,0 +1,49 @@
+---
+description: March Mathness project context, tech stack, and documentation references
+alwaysApply: true
+---
+
+# March Mathness — Project Context
+
+NCAA Tournament prediction engine: ingests team stats CSV, runs multi-model scoring, outputs ranked tables, matchup win probabilities, Monte Carlo bracket simulations, and Cinderella/Fraud detection.
+
+## Tech Stack
+
+- **Python 3.11+** — all computation
+- **pandas/numpy/scipy/scikit-learn** — data, math, optimization, calibration
+- **Streamlit** — interactive UI (`app.py`)
+- **Jinja2** — static bracket HTML rendering
+- **cloudscraper** — required for Torvik/Massey (Cloudflare); plain `requests` returns 403
+- **CLI entry:** `python main.py --mode full|rankings|simulate|update`
+
+## Directory Structure
+
+```
+engine/          # Core pipeline modules (ingestion → normalization → conference → scoring → win_prob → simulation → bracket_generator → output)
+models/          # weights.json, conference_weights.json (external, tunable — NOT hardcoded)
+data/            # teams_input.csv, bracket_input.json, overrides.json, coach_scores.json
+outputs/         # Generated: rankings/, brackets/, dashboard/
+templates/       # Jinja2 bracket HTML templates
+scripts/         # fetch_data.py, backtest.py
+tests/           # pytest unit tests per engine module
+```
+
+## Documentation (read before implementing)
+
+| Doc | Contains |
+|-----|----------|
+| `documentation/PRD.md` | Features F1–F10, inputs/outputs, success criteria |
+| `documentation/ALGORITHM.md` | All formulas, weights, thresholds, normalization ranges — implement exactly as written |
+| `documentation/DATA_SCHEMA.md` | Column specs, alias maps, default values, bracket JSON format |
+| `documentation/IMPLEMENTATION_GUIDE.md` | Module-by-module build order, function signatures, test snippets |
+| `documentation/API_DATA_SOURCES.md` | Data fetch script, API endpoints, cloudscraper usage |
+| `documentation/UI_OUTPUT_DESIGN.md` | Color coding, verdict labels, pick sheet format |
+| `documentation/MID_TOURNAMENT_UPDATES.md` | ESPN live results, tournament bonus, re-scoring pipeline |
+
+## Key Constraints
+
+- Single user, local deployment — no auth, no DB, no multi-tenancy
+- Runs fully offline after data ingestion
+- 10K Monte Carlo sims must complete in <30 seconds
+- All math must be traceable to peer-reviewed research or validated public rating systems
+- Weight dicts are external JSON configs — never hardcode weights

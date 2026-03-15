@@ -1,0 +1,42 @@
+TASK: Star Player Index Overrides
+WHEN TO RUN: After the bracket is announced (any time before running the app)
+OUTPUT FORMAT: CSV values to update specific rows in data/teams_input.csv
+TIME: ~5 minutes
+
+
+PROMPT TO SEND TO CLAUDE RESEARCH
+==================================
+
+For the 2026 NCAA Men's Basketball Tournament, identify the standout players who are projected lottery picks, consensus All-Americans, or Player of the Year candidates.
+
+For each player, give me:
+- Their team name
+- Their name
+- A Star_Player_Index score on this scale:
+
+  9-10: Projected top 5 NBA draft pick, generational talent
+  7-8: Projected lottery pick or consensus All-Conference First Team
+  5-6: Solid starter, potential second round pick
+
+Only include players who score 7 or higher. I already have auto-computed values for everyone else based on their BPM stats, so I only need the overrides for true standouts that the stats might underrate (especially freshmen and players whose impact goes beyond box score stats).
+
+Output as a simple CSV with three columns: Team, Player, Star_Player_Index
+
+IMPORTANT: Use ONLY team names from the list below.
+
+Output ONLY the CSV. No explanations.
+
+
+TEAM NAME LIST
+==============
+[After running fetch_data.py, paste the contents of data/team_names.txt here]
+
+
+WHAT TO DO WITH THE OUTPUT
+==========================
+
+1. Open data/teams_input.csv in a spreadsheet.
+
+2. For each team in the CSV output, find the matching row in teams_input.csv and update the Star_Player_Index column with the new value.
+
+3. Only update the specific teams listed. Leave all other teams with their auto-computed values.

@@ -1,0 +1,86 @@
+TASK: Tournament Bracket Structure
+WHEN TO RUN: Immediately after the 2026 NCAA Tournament bracket is announced
+OUTPUT FORMAT: JSON saved as data/bracket_input.json
+TIME: ~5 minutes plus a few minutes to verify
+
+
+PROMPT TO SEND TO CLAUDE RESEARCH
+==================================
+
+I need the complete 2026 NCAA Men's Basketball Tournament bracket as a JSON file.
+
+Use this exact format:
+
+{
+  "year": 2026,
+  "regions": ["Region1Name", "Region2Name", "Region3Name", "Region4Name"],
+  "teams": [
+    {"team": "Team Name", "seed": 1, "region": "Region1Name", "slot": 1},
+    {"team": "Team Name", "seed": 16, "region": "Region1Name", "slot": 2},
+    ...
+  ]
+}
+
+Rules for the teams array:
+
+Each region has exactly 16 slots numbered 1 through 16. The slot number determines who plays who in the first round:
+
+  Slots 1 and 2: 1-seed vs 16-seed
+  Slots 3 and 4: 8-seed vs 9-seed
+  Slots 5 and 6: 5-seed vs 12-seed
+  Slots 7 and 8: 4-seed vs 13-seed
+  Slots 9 and 10: 6-seed vs 11-seed
+  Slots 11 and 12: 3-seed vs 14-seed
+  Slots 13 and 14: 7-seed vs 10-seed
+  Slots 15 and 16: 2-seed vs 15-seed
+
+The higher seed (lower number) always gets the lower slot number. So the 1-seed is slot 1 and the 16-seed is slot 2.
+
+For First Four play-in games, list the team that appears in the bracket with these extra fields:
+
+  {"team": "Team A", "seed": 16, "region": "East", "slot": 2, "play_in": true, "play_in_opponent": "Team B"}
+
+Both play-in teams should be included this way (one entry per play-in matchup -- use the team listed first in the bracket as the main entry and the other as play_in_opponent).
+
+There should be 4 regions, 16 slots per region, for a total of 64 entries in the teams array (plus the play-in opponents noted in the play_in_opponent fields).
+
+Use the exact region names from the bracket announcement.
+
+IMPORTANT: Use ONLY team names from the list below. If a team name does not exactly match, use the closest match and mark it with an asterisk in a comment.
+
+Output ONLY the JSON. No explanations.
+
+
+TEAM NAME LIST
+==============
+[After running fetch_data.py, paste the contents of data/team_names.txt here]
+
+
+WHAT TO DO WITH THE OUTPUT
+==========================
+
+1. Save the JSON output as data/bracket_input.json
+
+2. Verify the file:
+   - 4 regions listed in the regions array
+   - 64 entries in the teams array (16 per region)
+   - Each region has slots 1 through 16 with no gaps or duplicates
+   - All team names match exactly what is in data/teams_input.csv
+   - Play-in games are marked with play_in: true and play_in_opponent
+
+3. If any team names had asterisks or comments, look up the correct name in data/teams_input.csv and fix it.
+
+
+HOW THE SYSTEM USES THIS FILE
+==============================
+
+The slot numbering defines the entire bracket tree:
+
+Round of 64: Slot pairs play each other (1v2, 3v4, 5v6, etc.)
+Round of 32: Winner of slots 1-2 plays winner of slots 3-4, winner of 5-6 plays winner of 7-8, etc.
+Sweet 16: Winners keep advancing through the bracket tree
+Elite 8: Two remaining teams per region
+Final Four: Region winners play each other
+Championship: Final Four winners
+
+Play-in games are resolved first by the simulation engine before the Round of 64 begins. After the real play-in games happen on Tuesday/Wednesday, update this file to remove the play_in and play_in_opponent fields from the winning teams.
