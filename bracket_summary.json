@@ -1,0 +1,596 @@
+{
+  "finalFourTeams": [
+    {
+      "team": "Houston",
+      "count": 5
+    },
+    {
+      "team": "Florida",
+      "count": 5
+    },
+    {
+      "team": "Duke",
+      "count": 5
+    },
+    {
+      "team": "Auburn",
+      "count": 5
+    },
+    {
+      "team": "Iowa St.",
+      "count": 2
+    },
+    {
+      "team": "Kentucky",
+      "count": 2
+    },
+    {
+      "team": "Yale",
+      "count": 1
+    },
+    {
+      "team": "Grand Canyon",
+      "count": 1
+    },
+    {
+      "team": "Liberty",
+      "count": 1
+    },
+    {
+      "team": "Texas",
+      "count": 1
+    },
+    {
+      "team": "Arkansas",
+      "count": 1
+    },
+    {
+      "team": "Oregon",
+      "count": 1
+    },
+    {
+      "team": "Texas Tech",
+      "count": 1
+    },
+    {
+      "team": "Alabama",
+      "count": 1
+    }
+  ],
+  "champions": [
+    {
+      "team": "Auburn",
+      "count": 5
+    },
+    {
+      "team": "Yale",
+      "count": 1
+    },
+    {
+      "team": "Arkansas",
+      "count": 1
+    },
+    {
+      "team": "Iowa St.",
+      "count": 1
+    }
+  ],
+  "cinderellaTeams": [
+    {
+      "team": "Missouri",
+      "count": 7
+    },
+    {
+      "team": "Mississippi",
+      "count": 6
+    },
+    {
+      "team": "Marquette",
+      "count": 6
+    },
+    {
+      "team": "Kansas",
+      "count": 6
+    },
+    {
+      "team": "BYU",
+      "count": 6
+    },
+    {
+      "team": "Illinois",
+      "count": 6
+    },
+    {
+      "team": "UCLA",
+      "count": 6
+    },
+    {
+      "team": "Louisville",
+      "count": 5
+    },
+    {
+      "team": "Connecticut",
+      "count": 5
+    },
+    {
+      "team": "Mississippi St.",
+      "count": 5
+    },
+    {
+      "team": "Saint Mary's",
+      "count": 5
+    },
+    {
+      "team": "Gonzaga",
+      "count": 5
+    },
+    {
+      "team": "Creighton",
+      "count": 3
+    },
+    {
+      "team": "Oklahoma",
+      "count": 3
+    },
+    {
+      "team": "Baylor",
+      "count": 3
+    },
+    {
+      "team": "Vanderbilt",
+      "count": 3
+    },
+    {
+      "team": "Georgia",
+      "count": 3
+    },
+    {
+      "team": "UC San Diego",
+      "count": 2
+    },
+    {
+      "team": "North Carolina",
+      "count": 2
+    },
+    {
+      "team": "New Mexico",
+      "count": 2
+    },
+    {
+      "team": "Colorado St.",
+      "count": 2
+    },
+    {
+      "team": "Arkansas",
+      "count": 2
+    },
+    {
+      "team": "VCU",
+      "count": 2
+    },
+    {
+      "team": "Texas",
+      "count": 2
+    },
+    {
+      "team": "Utah St.",
+      "count": 2
+    },
+    {
+      "team": "Yale",
+      "count": 1
+    },
+    {
+      "team": "Grand Canyon",
+      "count": 1
+    },
+    {
+      "team": "Drake",
+      "count": 1
+    },
+    {
+      "team": "Liberty",
+      "count": 1
+    }
+  ],
+  "consistentFinalFour": [
+    {
+      "team": "Houston",
+      "count": 5,
+      "seed": 1,
+      "adjO": 124.8,
+      "adjD": 87.9
+    },
+    {
+      "team": "Florida",
+      "count": 5,
+      "seed": 1,
+      "adjO": 127.7,
+      "adjD": 94
+    },
+    {
+      "team": "Duke",
+      "count": 5,
+      "seed": 1,
+      "adjO": 128.5,
+      "adjD": 91.3
+    },
+    {
+      "team": "Auburn",
+      "count": 5,
+      "seed": 1,
+      "adjO": 129,
+      "adjD": 93.7
+    }
+  ],
+  "consistentChampions": [
+    {
+      "team": "Auburn",
+      "count": 5,
+      "seed": 1,
+      "adjO": 129,
+      "adjD": 93.7
+    }
+  ],
+  "consistentCinderellas": [
+    {
+      "team": "Missouri",
+      "count": 7,
+      "seed": 6,
+      "adjO": 127,
+      "adjD": 100.8,
+      "strengths": [
+        "excellent 3-point shooting",
+        "efficient shooting",
+        "elite defensive rebounding",
+        "strong power rating",
+        "plays at a fast pace",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "Mississippi",
+      "count": 6,
+      "seed": 5,
+      "adjO": 117.4,
+      "adjD": 100.4,
+      "strengths": [
+        "takes care of the ball",
+        "creates lots of turnovers",
+        "excellent ball movement",
+        "elite defensive rebounding",
+        "veteran team with experience"
+      ]
+    },
+    {
+      "team": "Marquette",
+      "count": 6,
+      "seed": 7,
+      "adjO": 116.7,
+      "adjD": 98.5,
+      "strengths": [
+        "takes care of the ball",
+        "excellent recent form",
+        "star player who can take over games",
+        "elite defensive rebounding"
+      ]
+    },
+    {
+      "team": "Kansas",
+      "count": 6,
+      "seed": 6,
+      "adjO": 116.1,
+      "adjD": 84.7,
+      "strengths": [
+        "excellent ball movement",
+        "excellent recent form",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "strong power rating",
+        "elite shot blocking",
+        "proven against top competition",
+        "significant height advantage",
+        "veteran team with experience"
+      ]
+    },
+    {
+      "team": "BYU",
+      "count": 6,
+      "seed": 5,
+      "adjO": 125.4,
+      "adjD": 99.1,
+      "strengths": [
+        "excellent 3-point shooting",
+        "efficient shooting",
+        "elite defensive rebounding",
+        "strong power rating",
+        "plays at a fast pace"
+      ]
+    },
+    {
+      "team": "Illinois",
+      "count": 6,
+      "seed": 5,
+      "adjO": 122.2,
+      "adjD": 98.5,
+      "strengths": [
+        "strong free throw shooting",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "strong power rating",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "UCLA",
+      "count": 6,
+      "seed": 7,
+      "adjO": 117.9,
+      "adjD": 95.3,
+      "strengths": [
+        "creates lots of turnovers",
+        "excellent ball movement",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "Louisville",
+      "count": 5,
+      "seed": 7,
+      "adjO": 118.3,
+      "adjD": 103.7,
+      "strengths": [
+        "elite defensive rebounding",
+        "strong power rating",
+        "excellent win percentage",
+        "significant height advantage",
+        "veteran team with experience"
+      ]
+    },
+    {
+      "team": "Connecticut",
+      "count": 5,
+      "seed": 8,
+      "adjO": 121.6,
+      "adjD": 102,
+      "strengths": [
+        "efficient shooting",
+        "excellent ball movement",
+        "strong free throw shooting",
+        "excellent recent form",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "dominant offensive rebounding",
+        "elite shot blocking"
+      ]
+    },
+    {
+      "team": "Mississippi St.",
+      "count": 5,
+      "seed": 8,
+      "adjO": 118.3,
+      "adjD": 98.8,
+      "strengths": [
+        "elite defensive rebounding",
+        "elite shot blocking"
+      ]
+    },
+    {
+      "team": "Saint Mary's",
+      "count": 5,
+      "seed": 8,
+      "adjO": 115,
+      "adjD": 100,
+      "strengths": [
+        "excellent ball movement",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "strong power rating",
+        "excellent win percentage",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "Gonzaga",
+      "count": 5,
+      "seed": 7,
+      "adjO": 123.3,
+      "adjD": 96.4,
+      "strengths": [
+        "excellent 3-point shooting",
+        "efficient shooting",
+        "takes care of the ball",
+        "excellent ball movement",
+        "strong free throw shooting",
+        "excellent recent form",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "strong power rating",
+        "plays at a fast pace",
+        "excellent win percentage",
+        "veteran team with experience"
+      ]
+    },
+    {
+      "team": "Creighton",
+      "count": 3,
+      "seed": 8,
+      "adjO": 117.3,
+      "adjD": 98.2,
+      "strengths": [
+        "efficient shooting",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "Oklahoma",
+      "count": 3,
+      "seed": 9,
+      "adjO": 117.7,
+      "adjD": 100.9,
+      "strengths": [
+        "excellent 3-point shooting",
+        "strong free throw shooting",
+        "elite defensive rebounding"
+      ]
+    },
+    {
+      "team": "Baylor",
+      "count": 3,
+      "seed": 9,
+      "adjO": 120.5,
+      "adjD": 99.7,
+      "strengths": [
+        "excellent recent form",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "dominant offensive rebounding"
+      ]
+    },
+    {
+      "team": "Vanderbilt",
+      "count": 3,
+      "seed": 11,
+      "adjO": 118.6,
+      "adjD": 101.2,
+      "strengths": [
+        "takes care of the ball",
+        "elite defensive rebounding"
+      ]
+    },
+    {
+      "team": "Georgia",
+      "count": 3,
+      "seed": 9,
+      "adjO": 115.9,
+      "adjD": 105.8,
+      "strengths": [
+        "elite defensive rebounding",
+        "dominant offensive rebounding",
+        "elite shot blocking",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "UC San Diego",
+      "count": 2,
+      "seed": 11,
+      "adjO": 113.5,
+      "adjD": 97,
+      "strengths": [
+        "excellent 3-point shooting",
+        "efficient shooting",
+        "takes care of the ball",
+        "creates lots of turnovers",
+        "excellent ball movement",
+        "elite defensive rebounding",
+        "excellent win percentage",
+        "veteran team with experience"
+      ]
+    },
+    {
+      "team": "North Carolina",
+      "count": 2,
+      "seed": 9,
+      "adjO": 118.8,
+      "adjD": 99.8,
+      "strengths": [
+        "excellent recent form",
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "plays at a fast pace"
+      ]
+    },
+    {
+      "team": "New Mexico",
+      "count": 2,
+      "seed": 10,
+      "adjO": 110.9,
+      "adjD": 102.4,
+      "strengths": [
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "dominant offensive rebounding",
+        "plays at a fast pace",
+        "elite shot blocking",
+        "excellent win percentage",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "Colorado St.",
+      "count": 2,
+      "seed": 12,
+      "adjO": 116.9,
+      "adjD": 98.6,
+      "strengths": [
+        "efficient shooting",
+        "strong free throw shooting",
+        "star player who can take over games",
+        "elite defensive rebounding"
+      ]
+    },
+    {
+      "team": "Arkansas",
+      "count": 2,
+      "seed": 10,
+      "adjO": 111.9,
+      "adjD": 95.4,
+      "strengths": [
+        "star player who can take over games",
+        "elite defensive rebounding",
+        "dominant offensive rebounding",
+        "plays at a fast pace",
+        "elite shot blocking",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "VCU",
+      "count": 2,
+      "seed": 10,
+      "adjO": 116.2,
+      "adjD": 96,
+      "strengths": [
+        "strong defensive field goal percentage",
+        "creates lots of turnovers",
+        "elite defensive rebounding",
+        "dominant offensive rebounding",
+        "elite shot blocking",
+        "excellent win percentage",
+        "significant height advantage"
+      ]
+    },
+    {
+      "team": "Texas",
+      "count": 2,
+      "seed": 11,
+      "adjO": 116.7,
+      "adjD": 100.2,
+      "strengths": [
+        "takes care of the ball",
+        "star player who can take over games",
+        "elite defensive rebounding"
+      ]
+    },
+    {
+      "team": "Utah St.",
+      "count": 2,
+      "seed": 10,
+      "adjO": 122.6,
+      "adjD": 105.2,
+      "strengths": [
+        "efficient shooting",
+        "creates lots of turnovers",
+        "excellent ball movement",
+        "elite defensive rebounding",
+        "excellent win percentage"
+      ]
+    }
+  ],
+  "totalBrackets": 8
+}

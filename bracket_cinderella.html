@@ -1,0 +1,826 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NCAA Tournament Bracket Visualization</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    .bracket-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    .region {
+      flex: 1;
+      min-width: 250px;
+      margin: 0 10px 20px;
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .region-title {
+      text-align: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .round {
+      margin-bottom: 20px;
+    }
+    .round-title {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .matchup {
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .team {
+      padding: 5px;
+      margin: 2px 0;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .team-seed {
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+      margin-right: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    .winner {
+      font-weight: bold;
+      background-color: #e8f4f8;
+    }
+    .upset {
+      background-color: #fff0f0;
+    }
+    .cinderella {
+      background-color: #fff8e0;
+    }
+    .final-four {
+      margin-top: 30px;
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .championship {
+      margin-top: 30px;
+      background-color: #f0f8ff;
+      border: 2px solid #4682b4;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .champion-card {
+      display: inline-block;
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      margin: 20px 0;
+    }
+    .strengths {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>NCAA Tournament Bracket Visualization</h1>
+  
+  <div class="bracket-container">
+    <div class="region">
+      <h2 class="region-title">East Region</h2>
+      
+      <div class="round">
+        <h3 class="round-title">Round of 32</h3>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">1</span> Houston</span>
+            <span>66</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">16</span> Saint Francis</span>
+            <span>27</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">8</span> Louisville</span>
+            <span>53</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">9</span> Creighton</span>
+            <span>54</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">5</span> Michigan</span>
+            <span>58</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">12</span> UC San Diego</span>
+            <span>46</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">4</span> Texas A&M</span>
+            <span>53</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">13</span> Yale</span>
+            <span>45</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">6</span> Mississippi</span>
+            <span>57</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">11</span> North Carolina</span>
+            <span>52</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">3</span> Iowa St.</span>
+            <span>61</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">14</span> Lipscomb</span>
+            <span>45</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">7</span> Marquette</span>
+            <span>53</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">10</span> New Mexico</span>
+            <span>45</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">2</span> Michigan St.</span>
+            <span>60</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">15</span> Bryant</span>
+            <span>39</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Sweet 16</h3>
+        <div class="matchup">
+          <div class="team winner  ">
+            <span><span class="team-seed">1</span> Houston</span>
+            <span>66</span>
+          </div>
+          <div class="team   cinderella">
+            <span><span class="team-seed">9</span> Creighton</span>
+            <span>54</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset cinderella">
+            <span><span class="team-seed">12</span> UC San Diego</span>
+            <span>46</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">4</span> Texas A&M</span>
+            <span>53</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">11</span> North Carolina</span>
+            <span>52</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">3</span> Iowa St.</span>
+            <span>61</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">10</span> New Mexico</span>
+            <span>45</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">2</span> Michigan St.</span>
+            <span>60</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Elite 8</h3>
+        <div class="matchup">
+          <div class="team winner  ">
+            <span><span class="team-seed">1</span> Houston</span>
+            <span>66</span>
+          </div>
+          <div class="team   cinderella">
+            <span><span class="team-seed">12</span> UC San Diego</span>
+            <span>46</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset ">
+            <span><span class="team-seed">3</span> Iowa St.</span>
+            <span>61</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">2</span> Michigan St.</span>
+            <span>60</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Final Four Representative</h3>
+        <div class="matchup">
+          <div class="team winner">
+            <span class="team-seed">3</span> Iowa St.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="region">
+      <h2 class="region-title">South Region</h2>
+      
+      <div class="round">
+        <h3 class="round-title">Round of 32</h3>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">1</span> Florida</span>
+            <span>69</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">16</span> Norfolk St.</span>
+            <span>33</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">8</span> Connecticut</span>
+            <span>57</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">9</span> Oklahoma</span>
+            <span>56</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">5</span> Memphis</span>
+            <span>47</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">12</span> Colorado St.</span>
+            <span>49</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">4</span> Maryland</span>
+            <span>60</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">13</span> Grand Canyon</span>
+            <span>44</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">6</span> Missouri</span>
+            <span>62</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">11</span> Drake</span>
+            <span>47</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">3</span> Texas Tech</span>
+            <span>65</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">14</span> UNC Wilmington</span>
+            <span>38</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">7</span> Kansas</span>
+            <span>60</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">10</span> Arkansas</span>
+            <span>56</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">2</span> St. John's</span>
+            <span>55</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">15</span> Omaha</span>
+            <span>34</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Sweet 16</h3>
+        <div class="matchup">
+          <div class="team winner  ">
+            <span><span class="team-seed">1</span> Florida</span>
+            <span>69</span>
+          </div>
+          <div class="team   cinderella">
+            <span><span class="team-seed">9</span> Oklahoma</span>
+            <span>56</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">12</span> Colorado St.</span>
+            <span>49</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">4</span> Maryland</span>
+            <span>60</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset cinderella">
+            <span><span class="team-seed">6</span> Missouri</span>
+            <span>62</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">3</span> Texas Tech</span>
+            <span>65</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset cinderella">
+            <span><span class="team-seed">10</span> Arkansas</span>
+            <span>56</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">2</span> St. John's</span>
+            <span>55</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Elite 8</h3>
+        <div class="matchup">
+          <div class="team   ">
+            <span><span class="team-seed">1</span> Florida</span>
+            <span>69</span>
+          </div>
+          <div class="team winner upset ">
+            <span><span class="team-seed">4</span> Maryland</span>
+            <span>60</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">6</span> Missouri</span>
+            <span>62</span>
+          </div>
+          <div class="team winner upset cinderella">
+            <span><span class="team-seed">10</span> Arkansas</span>
+            <span>56</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Final Four Representative</h3>
+        <div class="matchup">
+          <div class="team winner">
+            <span class="team-seed">10</span> Arkansas
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="region">
+      <h2 class="region-title">West Region</h2>
+      
+      <div class="round">
+        <h3 class="round-title">Round of 32</h3>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">1</span> Duke</span>
+            <span>67</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">16</span> American</span>
+            <span>32</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">8</span> Mississippi St.</span>
+            <span>56</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">9</span> Baylor</span>
+            <span>56</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">5</span> Oregon</span>
+            <span>57</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">12</span> Liberty</span>
+            <span>47</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">4</span> Arizona</span>
+            <span>60</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">13</span> Akron</span>
+            <span>46</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">6</span> BYU</span>
+            <span>58</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">11</span> VCU</span>
+            <span>56</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">3</span> Wisconsin</span>
+            <span>59</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">14</span> Montana</span>
+            <span>36</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">7</span> Saint Mary's</span>
+            <span>46</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">10</span> Vanderbilt</span>
+            <span>52</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">2</span> Alabama</span>
+            <span>69</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">15</span> Robert Morris</span>
+            <span>38</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Sweet 16</h3>
+        <div class="matchup">
+          <div class="team winner  ">
+            <span><span class="team-seed">1</span> Duke</span>
+            <span>67</span>
+          </div>
+          <div class="team   cinderella">
+            <span><span class="team-seed">9</span> Baylor</span>
+            <span>56</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset ">
+            <span><span class="team-seed">5</span> Oregon</span>
+            <span>57</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">4</span> Arizona</span>
+            <span>60</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset cinderella">
+            <span><span class="team-seed">11</span> VCU</span>
+            <span>56</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">3</span> Wisconsin</span>
+            <span>59</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">10</span> Vanderbilt</span>
+            <span>52</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">2</span> Alabama</span>
+            <span>69</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Elite 8</h3>
+        <div class="matchup">
+          <div class="team   ">
+            <span><span class="team-seed">1</span> Duke</span>
+            <span>67</span>
+          </div>
+          <div class="team winner upset ">
+            <span><span class="team-seed">5</span> Oregon</span>
+            <span>57</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">11</span> VCU</span>
+            <span>56</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">2</span> Alabama</span>
+            <span>69</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Final Four Representative</h3>
+        <div class="matchup">
+          <div class="team winner">
+            <span class="team-seed">5</span> Oregon
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="region">
+      <h2 class="region-title">Midwest Region</h2>
+      
+      <div class="round">
+        <h3 class="round-title">Round of 32</h3>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">1</span> Auburn</span>
+            <span>74</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">16</span> SIU Edwardsville</span>
+            <span>30</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">8</span> Gonzaga</span>
+            <span>55</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">9</span> Georgia</span>
+            <span>52</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">5</span> Clemson</span>
+            <span>57</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">12</span> McNeese</span>
+            <span>40</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">4</span> Purdue</span>
+            <span>58</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">13</span> High Point</span>
+            <span>41</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">6</span> Illinois</span>
+            <span>58</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">11</span> Texas</span>
+            <span>57</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">3</span> Kentucky</span>
+            <span>63</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">14</span> Troy</span>
+            <span>38</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team  ">
+            <span><span class="team-seed">7</span> UCLA</span>
+            <span>58</span>
+          </div>
+          <div class="team winner upset">
+            <span><span class="team-seed">10</span> Utah St.</span>
+            <span>49</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner ">
+            <span><span class="team-seed">2</span> Tennessee</span>
+            <span>64</span>
+          </div>
+          <div class="team  ">
+            <span><span class="team-seed">15</span> Wofford</span>
+            <span>40</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Sweet 16</h3>
+        <div class="matchup">
+          <div class="team winner  ">
+            <span><span class="team-seed">1</span> Auburn</span>
+            <span>74</span>
+          </div>
+          <div class="team   cinderella">
+            <span><span class="team-seed">9</span> Georgia</span>
+            <span>52</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset ">
+            <span><span class="team-seed">5</span> Clemson</span>
+            <span>57</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">4</span> Purdue</span>
+            <span>58</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">11</span> Texas</span>
+            <span>57</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">3</span> Kentucky</span>
+            <span>63</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team   cinderella">
+            <span><span class="team-seed">10</span> Utah St.</span>
+            <span>49</span>
+          </div>
+          <div class="team winner  ">
+            <span><span class="team-seed">2</span> Tennessee</span>
+            <span>64</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Elite 8</h3>
+        <div class="matchup">
+          <div class="team winner  ">
+            <span><span class="team-seed">1</span> Auburn</span>
+            <span>74</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">5</span> Clemson</span>
+            <span>57</span>
+          </div>
+        </div>
+        <div class="matchup">
+          <div class="team winner upset ">
+            <span><span class="team-seed">3</span> Kentucky</span>
+            <span>63</span>
+          </div>
+          <div class="team   ">
+            <span><span class="team-seed">2</span> Tennessee</span>
+            <span>64</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="round">
+        <h3 class="round-title">Final Four Representative</h3>
+        <div class="matchup">
+          <div class="team winner">
+            <span class="team-seed">3</span> Kentucky
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="final-four">
+    <h2>Final Four</h2>
+    <div class="bracket-container">
+      <div class="matchup" style="flex: 1; min-width: 300px;">
+        <h3>Iowa St. vs Oregon</h3>
+        <div class="team winner">
+          <span>Winner: Oregon</span>
+        </div>
+      </div>
+      
+      <div class="matchup" style="flex: 1; min-width: 300px;">
+        <h3>Arkansas vs Kentucky</h3>
+        <div class="team winner">
+          <span>Winner: Arkansas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="championship">
+    <h2>Championship Game</h2>
+    <h3>Oregon vs Arkansas</h3>
+    <div class="champion-card">
+      <h2>National Champion</h2>
+      <h3>Arkansas (10 Seed)</h3>
+      <div class="strengths">
+        <strong>Key Strengths:</strong> star player who can take over games, elite defensive rebounding, dominant offensive rebounding, plays at a fast pace, elite shot blocking
+      </div>
+    </div>
+  </div>
+  
+  <h2>Notable Upsets</h2>
+  <ul>
+    <li><strong>roundOf32 (East):</strong> UC San Diego (12) over Michigan (5) - <span class="strengths">Key strengths: excellent 3-point shooting, efficient shooting, takes care of the ball</span></li>
+    <li><strong>roundOf32 (East):</strong> North Carolina (11) over Mississippi (6) - <span class="strengths">Key strengths: excellent recent form, star player who can take over games, elite defensive rebounding</span></li>
+    <li><strong>roundOf32 (East):</strong> New Mexico (10) over Marquette (7) - <span class="strengths">Key strengths: star player who can take over games, elite defensive rebounding, dominant offensive rebounding</span></li>
+    <li><strong>sweet16 (East):</strong> UC San Diego (12) over Texas A&M (4) - <span class="strengths">Key strengths: excellent 3-point shooting, efficient shooting, takes care of the ball</span></li>
+    <li><strong>roundOf32 (South):</strong> Colorado St. (12) over Memphis (5) - <span class="strengths">Key strengths: efficient shooting, strong free throw shooting, star player who can take over games</span></li>
+    <li><strong>roundOf32 (South):</strong> Arkansas (10) over Kansas (7) - <span class="strengths">Key strengths: star player who can take over games, elite defensive rebounding, dominant offensive rebounding</span></li>
+    <li><strong>sweet16 (South):</strong> Missouri (6) over Texas Tech (3) - <span class="strengths">Key strengths: excellent 3-point shooting, efficient shooting, elite defensive rebounding</span></li>
+    <li><strong>sweet16 (South):</strong> Arkansas (10) over St. John's (2) - <span class="strengths">Key strengths: star player who can take over games, elite defensive rebounding, dominant offensive rebounding</span></li>
+    <li><strong>elite8 (South):</strong> Maryland (4) over Florida (1) - <span class="strengths">Key strengths: excellent 3-point shooting, takes care of the ball, creates lots of turnovers</span></li>
+    <li><strong>elite8 (South):</strong> Arkansas (10) over Missouri (6) - <span class="strengths">Key strengths: star player who can take over games, elite defensive rebounding, dominant offensive rebounding</span></li>
+    <li><strong>roundOf32 (West):</strong> VCU (11) over BYU (6) - <span class="strengths">Key strengths: strong defensive field goal percentage, creates lots of turnovers, elite defensive rebounding</span></li>
+    <li><strong>roundOf32 (West):</strong> Vanderbilt (10) over Saint Mary's (7) - <span class="strengths">Key strengths: takes care of the ball, elite defensive rebounding</span></li>
+    <li><strong>sweet16 (West):</strong> VCU (11) over Wisconsin (3) - <span class="strengths">Key strengths: strong defensive field goal percentage, creates lots of turnovers, elite defensive rebounding</span></li>
+    <li><strong>elite8 (West):</strong> Oregon (5) over Duke (1) - <span class="strengths">Key strengths: strong free throw shooting, star player who can take over games, elite defensive rebounding</span></li>
+    <li><strong>roundOf32 (Midwest):</strong> Texas (11) over Illinois (6) - <span class="strengths">Key strengths: takes care of the ball, star player who can take over games, elite defensive rebounding</span></li>
+    <li><strong>roundOf32 (Midwest):</strong> Utah St. (10) over UCLA (7) - <span class="strengths">Key strengths: efficient shooting, creates lots of turnovers, excellent ball movement</span></li>
+  </ul>
+  
+  <footer>
+    <p>Generated on 3/20/2025 using Enhanced NCAA Tournament Bracket Generator</p>
+  </footer>
+</body>
+</html>

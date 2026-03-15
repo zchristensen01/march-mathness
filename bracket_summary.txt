@@ -1,0 +1,37 @@
+NCAA TOURNAMENT BRACKET GENERATOR RESULTS
+
+MOST CONSISTENT FINAL FOUR PICKS:
+- Houston (1 seed): Selected in 5/8 brackets
+- Florida (1 seed): Selected in 5/8 brackets
+- Duke (1 seed): Selected in 5/8 brackets
+- Auburn (1 seed): Selected in 5/8 brackets
+
+MOST CONSISTENT CHAMPIONSHIP PICKS:
+- Auburn (1 seed): Selected in 5/8 brackets
+
+MOST CONSISTENT CINDERELLA TEAMS (6TH SEED OR LOWER):
+- Missouri (6 seed): Selected in 7 brackets
+- Mississippi (5 seed): Selected in 6 brackets
+- Marquette (7 seed): Selected in 6 brackets
+- Kansas (6 seed): Selected in 6 brackets
+- BYU (5 seed): Selected in 6 brackets
+- Illinois (5 seed): Selected in 6 brackets
+- UCLA (7 seed): Selected in 6 brackets
+- Louisville (7 seed): Selected in 5 brackets
+- Connecticut (8 seed): Selected in 5 brackets
+- Mississippi St. (8 seed): Selected in 5 brackets
+- Saint Mary's (8 seed): Selected in 5 brackets
+- Gonzaga (7 seed): Selected in 5 brackets
+- Creighton (8 seed): Selected in 3 brackets
+- Oklahoma (9 seed): Selected in 3 brackets
+- Baylor (9 seed): Selected in 3 brackets
+- Vanderbilt (11 seed): Selected in 3 brackets
+- Georgia (9 seed): Selected in 3 brackets
+- UC San Diego (11 seed): Selected in 2 brackets
+- North Carolina (9 seed): Selected in 2 brackets
+- New Mexico (10 seed): Selected in 2 brackets
+- Colorado St. (12 seed): Selected in 2 brackets
+- Arkansas (10 seed): Selected in 2 brackets
+- VCU (10 seed): Selected in 2 brackets
+- Texas (11 seed): Selected in 2 brackets
+- Utah St. (10 seed): Selected in 2 brackets
