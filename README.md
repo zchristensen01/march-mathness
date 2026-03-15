@@ -2,6 +2,10 @@
 
 Research-backed NCAA tournament prediction engine that ingests team-level stats, computes multi-model scores, estimates matchup win probabilities, runs Monte Carlo bracket simulations, and produces ranked outputs + bracket artifacts for decision support.
 
+For a chronological, command-by-command operator guide, start with:
+
+- `documentation/START_HERE.md`
+
 ## Tech Stack
 
 - Python 3.11+

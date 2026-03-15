@@ -100,10 +100,11 @@ Full implementation is in `API_DATA_SOURCES.md` Section 9. Build this FIRST — 
 # Run after virtual environment is set up:
 python scripts/fetch_data.py --year 2026
 
-# Then follow the "Next steps" printed by the script to fill manual fields
+# Then follow the "Next steps" printed by the script
 ```
 
-After `fetch_data.py` runs, you still need to manually fill: Seeds, Last_10_Games_Metric, Star_Player_Index, Bench_Minutes_Pct, Quad1_Wins, NET_Rank, Conf_Tourney_Champion, and Won_Play_In. See the data input checklist document for the full manual data collection guide.
+After `fetch_data.py` runs, you still need to manually fill: `Seed`, `Last_10_Games_Metric`, `Quad1_Wins`, `Conf_Tourney_Champion`, and later `Won_Play_In` (after First Four games).  
+`NET_Rank`, `Star_Player_Index`, and `Bench_Minutes_Pct` are auto-populated by the fetch pipeline when ESPN/Torvik endpoints are available. If those sources fail, the pipeline falls back to defaults and you can optionally backfill manually. See `DATA_INPUT_CHECKLIST.md` for the full post-bracket workflow.
 
 ---
 

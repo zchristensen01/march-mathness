@@ -781,12 +781,17 @@ After running `scripts/fetch_data.py`, some fields require manual collection. Mo
 
 | Data | File | Method |
 |------|------|--------|
-| Seeds, NET_Rank, Quad1_Wins, Last_10_Games_Metric, Conf_Tourney_Champion | `data/teams_input.csv` | Claude Research → paste into CSV |
-| Bracket structure (regions, slots) | `data/bracket_input.json` | Manual entry |
+| Seeds, Quad1_Wins, Last_10_Games_Metric, Conf_Tourney_Champion | `data/teams_input.csv` | Claude Research → paste into CSV |
+| Bracket structure (regions, slots) | `data/bracket_input.json` | Claude Research (prompt 02) → save JSON |
 | Coach tournament experience scores | `data/coach_scores.json` | Claude Research → save JSON |
 | Star_Player_Index overrides (standouts only) | `data/teams_input.csv` | Claude Research → update specific rows |
 | Injury overrides | `data/overrides.json` | Claude Research → save JSON |
 | Won_Play_In flag (4 teams) | `data/teams_input.csv` | After First Four games |
+
+Notes:
+- `NET_Rank` is auto-fetched from ESPN when available.
+- `Star_Player_Index` and `Bench_Minutes_Pct` are auto-computed from Torvik player data when available.
+- If those upstream fetches fail, the pipeline uses defaults and you can optionally backfill manually.
 
 **⚠️ Team names in ALL files must match the canonical names in `data/teams_input.csv`.** See team name normalization in Section 8.
 
