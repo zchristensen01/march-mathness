@@ -44,6 +44,11 @@ def _prepare_norms(df: pd.DataFrame) -> tuple[list[dict[str, float]], list[dict[
         norms[i]["Volatility_Score"] = compute_volatility_score(row_dict, norms[i])
         df.at[i, "Consistency_Score"] = norms[i]["Consistency_Score"]
         df.at[i, "Volatility_Score"] = norms[i]["Volatility_Score"]
+        wins = pd.to_numeric(pd.Series([row_dict.get("Wins")]), errors="coerce").iloc[0]
+        games = pd.to_numeric(pd.Series([row_dict.get("Games")]), errors="coerce").iloc[0]
+        win_pct = float(wins) / float(games) if pd.notna(wins) and pd.notna(games) and games > 0 else 0.65
+        last_10 = float(row_dict.get("Last_10_Games_Metric", 0.65))
+        df.at[i, "MomentumDelta"] = round(last_10 - win_pct, 4)
     return norms, deriveds
 
 

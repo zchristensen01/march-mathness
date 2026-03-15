@@ -7,19 +7,9 @@ from typing import Any, Callable
 
 import numpy as np
 
+from engine import FIRST_ROUND_MATCHUPS
 from engine.scoring import load_strategy_configs
 from engine.win_probability import apply_fraud_adjustment
-
-FIRST_ROUND_MATCHUPS: list[tuple[int, int]] = [
-    (0, 1),
-    (2, 3),
-    (4, 5),
-    (6, 7),
-    (8, 9),
-    (10, 11),
-    (12, 13),
-    (14, 15)
-]
 
 
 def _team_name(team: dict[str, Any]) -> str:
@@ -82,7 +72,7 @@ def simulate_matchup_strategy(
     if (
         int(underdog.get("Seed", 16)) == 16
         and int(favorite.get("Seed", 1)) == 1
-        and strategy_name in {"analytics", "favorites"}
+        and float(strategy.get("upset_threshold", 0)) > 0.35
     ):
         is_upset = False
 

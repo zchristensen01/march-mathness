@@ -8,18 +8,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-FIRST_ROUND_MATCHUPS: list[tuple[int, int]] = [
-    (0, 1),
-    (2, 3),
-    (4, 5),
-    (6, 7),
-    (8, 9),
-    (10, 11),
-    (12, 13),
-    (14, 15)
-]
-
-ROUND_NAMES: list[str] = ["R64", "R32", "S16", "E8", "F4", "Championship", "Champion"]
+from engine import FIRST_ROUND_MATCHUPS, ROUND_NAMES
 
 
 def _play_game(
@@ -88,8 +77,7 @@ def simulate_bracket(
 
         f4_winner_1 = _play_game(region_winners[0], region_winners[1], win_prob_fn, reach_count, "Championship")
         f4_winner_2 = _play_game(region_winners[2], region_winners[3], win_prob_fn, reach_count, "Championship")
-        champion = _play_game(f4_winner_1, f4_winner_2, win_prob_fn, reach_count, "Champion")
-        reach_count[str(champion.get("Team", champion.get("team")))]["Champion"] += 1
+        _play_game(f4_winner_1, f4_winner_2, win_prob_fn, reach_count, "Champion")
 
     for teams in normalized_bracket.values():
         for team in teams:

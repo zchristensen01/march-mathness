@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Callable
 
@@ -10,6 +11,8 @@ import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from engine.win_probability import predicted_spread
+
+log = logging.getLogger(__name__)
 
 HISTORICAL_UPSET_RATES: dict[tuple[int, int], float] = {
     (1, 16): 0.0125,
@@ -129,10 +132,30 @@ def classify_matchup_verdict(
     }
 
 
+def _count_upset_picks(
+    higher_name: str,
+    lower_name: str,
+    brackets: dict[str, dict[str, Any]]
+) -> int:
+    """Count how many strategy brackets pick the lower-seeded team to win."""
+    upset_count = 0
+    for bracket in brackets.values():
+        for region_rounds in bracket.get("rounds", {}).values():
+            for round_games in region_rounds.values():
+                for game in round_games:
+                    h_team = str(game.get("higher_seed_team", ""))
+                    l_team = str(game.get("lower_seed_team", ""))
+                    if h_team == higher_name and l_team == lower_name:
+                        if game.get("is_upset"):
+                            upset_count += 1
+    return upset_count
+
+
 def write_matchup_verdicts_json(
     teams: list[dict[str, Any]],
     win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float],
-    output_dir: str
+    output_dir: str,
+    brackets: dict[str, dict[str, Any]] | None = None
 ) -> Path:
     """Precompute matchup verdicts for UI rendering."""
     matchups: list[dict[str, Any]] = []
@@ -146,15 +169,34 @@ def write_matchup_verdicts_json(
             lower_seed = team_b if higher_seed is team_a else team_a
             p_higher = float(win_prob_fn(higher_seed, lower_seed))
             c_score = float(lower_seed.get("CinderellaScore") or 0.0)
-            verdict = classify_matchup_verdict(higher_seed, lower_seed, p_higher, c_score, models_picking_upset=0)
+            h_name = str(higher_seed.get("Team"))
+            l_name = str(lower_seed.get("Team"))
+            upset_picks = _count_upset_picks(h_name, l_name, brackets) if brackets else 0
+            verdict = classify_matchup_verdict(higher_seed, lower_seed, p_higher, c_score, upset_picks)
             matchup_key = (int(min(seed_a, seed_b)), int(max(seed_a, seed_b)))
             matchups.append(
                 {
-                    "team_a": {"name": higher_seed.get("Team"), "seed": int(higher_seed.get("Seed", 16))},
-                    "team_b": {"name": lower_seed.get("Team"), "seed": int(lower_seed.get("Seed", 16))},
+                    "team_a": {
+                        "name": h_name,
+                        "seed": int(higher_seed.get("Seed", 16)),
+                        "power_score": float(higher_seed.get("PowerScore") or 0.0),
+                        "adjEM": float(higher_seed.get("AdjEM") or 0.0),
+                        "fraud_score": float(higher_seed.get("FraudScore") or 0.0),
+                        "fraud_level": str(higher_seed.get("FraudLevel") or ""),
+                    },
+                    "team_b": {
+                        "name": l_name,
+                        "seed": int(lower_seed.get("Seed", 16)),
+                        "power_score": float(lower_seed.get("PowerScore") or 0.0),
+                        "adjEM": float(lower_seed.get("AdjEM") or 0.0),
+                        "cinderella_score": c_score,
+                        "cinderella_level": str(lower_seed.get("CinderellaAlertLevel") or ""),
+                    },
                     "win_prob_a": p_higher,
                     "predicted_spread": predicted_spread(higher_seed, lower_seed),
                     "historical_upset_rate": HISTORICAL_UPSET_RATES.get(matchup_key, 0.30),
+                    "models_agreeing": len(brackets) - upset_picks if brackets else 0,
+                    "models_picking_upset": upset_picks,
                     "verdict": verdict["verdict"],
                     "verdict_icon": verdict["icon"],
                     "verdict_color": verdict["color"],
@@ -259,15 +301,16 @@ def write_all_outputs(
         try:
             html_path = write_bracket_html(bracket, strategy_name, output_dir)
             written["brackets"].append(str(html_path))
-        except Exception:
-            # HTML writing should not block core pipeline outputs.
-            pass
+        except Exception as exc:
+            log.warning("HTML bracket rendering failed for %s: %s", strategy_name, exc)
 
     written["other"].append(str(write_simulation_json(simulation, output_dir)))
     written["other"].append(str(write_summary_json(summary, output_dir)))
 
     if all_teams_for_verdicts is not None and win_prob_fn is not None:
-        verdict_path = write_matchup_verdicts_json(all_teams_for_verdicts, win_prob_fn, output_dir)
+        verdict_path = write_matchup_verdicts_json(
+            all_teams_for_verdicts, win_prob_fn, output_dir, brackets=brackets or None
+        )
         written["other"].append(str(verdict_path))
         verdict_payload = json.loads(Path(verdict_path).read_text(encoding="utf-8"))
         pick_sheet = write_bracket_pick_sheet(rankings, simulation, verdict_payload, output_dir)

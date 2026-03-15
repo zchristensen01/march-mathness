@@ -187,7 +187,7 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
     """Compute 6-component Cinderella score for seeds >= 9."""
     seed = int(team.get("Seed", 16))
     if seed < 9:
-        return {"CinderellaScore": None, "CinderellaAlertLevel": ""}
+        return {"CinderellaScore": 0.0, "CinderellaAlertLevel": ""}
 
     comp_rank = int(team.get("CompRank") or team.get("Torvik_Rank") or 200)
     seed_mis = seed_mismatch(seed, comp_rank)
@@ -241,7 +241,7 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
     """Compute 7-component Fraud score for seeds <= 6."""
     seed = int(team.get("Seed", 16))
     if seed > 6:
-        return {"FraudScore": None, "FraudLevel": ""}
+        return {"FraudScore": 0.0, "FraudLevel": ""}
 
     comp_rank = int(team.get("CompRank") or team.get("Torvik_Rank") or 50)
     implied = implied_seed(comp_rank)
@@ -458,21 +458,4 @@ def generate_all_rankings(
     return rankings
 
 
-def generate_bracket_summary(all_brackets: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    """Build consensus summary across strategy brackets."""
-    if not all_brackets:
-        return {"champion_consensus": "", "final_four_consensus": [], "contested_games": []}
-    champions = [b.get("champion") for b in all_brackets.values() if b.get("champion")]
-    champion_counts = pd.Series(champions).value_counts() if champions else pd.Series(dtype=int)
-    final_fours: list[str] = []
-    for bracket in all_brackets.values():
-        final_fours.extend(bracket.get("final_four", []))
-    ff_counts = pd.Series(final_fours).value_counts() if final_fours else pd.Series(dtype=int)
-    return {
-        "champion_consensus": champion_counts.index[0] if not champion_counts.empty else "",
-        "champion_counts": champion_counts.to_dict(),
-        "final_four_consensus": ff_counts.head(4).index.tolist(),
-        "final_four_counts": ff_counts.to_dict(),
-        "n_strategies": len(all_brackets)
-    }
 

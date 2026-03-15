@@ -6,8 +6,8 @@ from engine.scoring import compute_cinderella_score, compute_fraud_score, genera
 def test_scope_guards_for_cinderella_and_fraud() -> None:
     c_result = compute_cinderella_score({"Seed": 4, "CompRank": 10, "Adj_T": 68}, {})
     f_result = compute_fraud_score({"Seed": 12, "CompRank": 120}, {})
-    assert c_result["CinderellaScore"] is None
-    assert f_result["FraudScore"] is None
+    assert c_result["CinderellaScore"] == 0.0
+    assert f_result["FraudScore"] == 0.0
 
 
 def test_generate_all_rankings_smoke() -> None:

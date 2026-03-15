@@ -82,7 +82,11 @@ def apply_play_in_boost(
     return _clip_probability(base_prob)
 
 
-def production_win_probability(team_a: dict[str, Any], team_b: dict[str, Any]) -> float:
+def production_win_probability(
+    team_a: dict[str, Any],
+    team_b: dict[str, Any],
+    round_number: int = 1
+) -> float:
     """Production probability path used by simulation and bracket generation."""
     base = blended_win_probability(team_a, team_b)
     with_seed_prior = apply_era_seed_prior(
@@ -90,7 +94,8 @@ def production_win_probability(team_a: dict[str, Any], team_b: dict[str, Any]) -
         int(team_a.get("Seed", 8)),
         int(team_b.get("Seed", 8))
     )
-    return _clip_probability(with_seed_prior)
+    with_play_in = apply_play_in_boost(with_seed_prior, team_a, team_b, round_number)
+    return _clip_probability(with_play_in)
 
 
 def confidence_tier(prob: float) -> str:

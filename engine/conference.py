@@ -81,7 +81,7 @@ def compute_all_conference_ratings(df: pd.DataFrame) -> pd.DataFrame:
         weight_override = conf_weights.get(str(conference), np.nan)
         multiplier = csi["multiplier"]
         if not pd.isna(weight_override):
-            multiplier = float(np.clip((multiplier + float(weight_override)) / 2.0, 0.75, 1.05))
+            multiplier = float(np.clip(max(multiplier, float(weight_override)), 0.75, 1.05))
         rows.append(
             {
                 "Conference": str(conference),
