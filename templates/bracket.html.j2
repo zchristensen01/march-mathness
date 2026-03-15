@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>March Mathness - {{ strategy_name|title }} Bracket</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+    .container { max-width: 1800px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0 0 6px 0; }
+    .meta { color: #475569; margin-bottom: 20px; }
+    .champion { background: #1a7f37; color: #fff; padding: 10px 14px; border-radius: 8px; font-weight: 700; margin-bottom: 20px; display: inline-block; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(360px, 1fr)); gap: 16px; }
+    .region { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+    .region h2 { margin: 0 0 8px 0; font-size: 18px; }
+    .round { margin-bottom: 12px; }
+    .round h3 { margin: 10px 0 8px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+    .game { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; margin-bottom: 6px; background: #f8fafc; }
+    .winner { font-weight: 700; color: #1a7f37; }
+    .prob { color: #475569; font-size: 12px; }
+    .flags { font-size: 12px; margin-top: 4px; }
+    .final-four { margin-top: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; }
+    .final-four ul { margin: 6px 0 0 18px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>{{ strategy_name|title }} Strategy Bracket</h1>
+    <div class="meta">{{ description }}</div>
+    <div class="champion">Champion: {{ champion }}</div>
+
+    <div class="grid">
+      {% for region_name, rounds in regions.items() %}
+      <section class="region">
+        <h2>{{ region_name }}</h2>
+        {% for round_name, games in rounds.items() %}
+        <div class="round">
+          <h3>{{ round_name }}</h3>
+          {% for game in games %}
+          <div class="game">
+            <div><strong>{{ game.higher_seed_seed }}</strong> {{ game.higher_seed_team }} vs <strong>{{ game.lower_seed_seed }}</strong> {{ game.lower_seed_team }}</div>
+            <div class="winner">Winner: {{ game.predicted_winner }}</div>
+            <div class="prob">Win probability: {{ (game.win_probability * 100)|round(1) }}%</div>
+            <div class="flags">
+              {% if game.upset_flag %}{{ game.upset_flag }} Upset {% endif %}
+              {% if game.fraud_flag %}{{ game.fraud_flag }} Fraud {% endif %}
+              {% if game.cinderella_flag %}{{ game.cinderella_flag }} Cinderella{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </section>
+      {% endfor %}
+    </div>
+
+    <section class="final-four">
+      <h2>Final Four</h2>
+      <ul>
+        {% for team in final_four %}
+        <li>{{ team }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</body>
+</html>
+

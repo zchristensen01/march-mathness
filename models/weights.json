@@ -1,0 +1,168 @@
+{
+  "models": {
+    "default": {
+      "AdjEM": 0.27,
+      "CompRank_inv": 0.12,
+      "SOS_inv": 0.06,
+      "eFG%": 0.07,
+      "Opp_eFG%_inv": 0.05,
+      "Opp_TO%": 0.06,
+      "TO%_inv": 0.03,
+      "OR%": 0.04,
+      "DR%": 0.03,
+      "FTR": 0.02,
+      "FT%": 0.02,
+      "Barthag": 0.04,
+      "Last_10_Games_Metric": 0.04,
+      "Exp": 0.03,
+      "Quad1_Wins": 0.04,
+      "Star_Player_Index": 0.02,
+      "Bench_Minutes_Pct": 0.02,
+      "Physicality": 0.02,
+      "BallMovement": 0.02
+    },
+    "defensive": {
+      "AdjD_inv": 0.3,
+      "Opp_eFG%_inv": 0.15,
+      "Opp_TO%": 0.14,
+      "DR%": 0.1,
+      "Blk_%": 0.08,
+      "InteriorDefense": 0.07,
+      "DefensivePlaymaking": 0.06,
+      "Opp_FTR_inv": 0.04,
+      "3P_%_D_inv": 0.03,
+      "2P_%_D_inv": 0.03
+    },
+    "offensive": {
+      "AdjO": 0.3,
+      "eFG%": 0.18,
+      "PPP_Off": 0.12,
+      "InsideScoring": 0.1,
+      "3P%": 0.08,
+      "OR%": 0.07,
+      "BallMovement": 0.06,
+      "FTR": 0.05,
+      "FT%": 0.04
+    },
+    "momentum": {
+      "Last_10_Games_Metric": 0.35,
+      "CloseGame": 0.2,
+      "AdjEM": 0.15,
+      "Opp_TO%": 0.1,
+      "FT%": 0.05,
+      "Barthag": 0.07,
+      "TournamentReadiness": 0.05,
+      "NETMomentum": 0.03
+    },
+    "giant_killer": {
+      "Opp_eFG%_inv": 0.18,
+      "Opp_TO%": 0.17,
+      "AdjEM": 0.15,
+      "CloseGame": 0.12,
+      "DefensivePlaymaking": 0.1,
+      "FT%": 0.08,
+      "Barthag": 0.07,
+      "Quad1_Wins": 0.06,
+      "Exp": 0.04,
+      "InteriorDefense": 0.03
+    },
+    "cinderella_tournament": {
+      "SeedMismatch_norm": 0.25,
+      "AdjD_inv": 0.18,
+      "Opp_TO%": 0.15,
+      "Barthag": 0.12,
+      "Exp": 0.08,
+      "Adj_T_inv": 0.07,
+      "OR%": 0.06,
+      "Quad1_Wins": 0.05,
+      "CloseGame": 0.04
+    },
+    "favorites": {
+      "AdjEM": 0.4,
+      "Barthag": 0.25,
+      "CompRank_inv": 0.2,
+      "eFG%": 0.08,
+      "AdjD_inv": 0.07
+    },
+    "analytics": {
+      "AdjEM": 0.35,
+      "Barthag": 0.25,
+      "AdjO": 0.15,
+      "AdjD_inv": 0.15,
+      "SOS_inv": 0.1
+    },
+    "experience": {
+      "Exp": 0.25,
+      "TournamentReadiness": 0.2,
+      "AdjEM": 0.2,
+      "CloseGame": 0.15,
+      "Quad1_Wins": 0.1,
+      "Barthag": 0.1
+    }
+  },
+  "strategies": {
+    "standard": {
+      "model_blends": {
+        "default": 1.0
+      },
+      "upset_threshold": 0.4,
+      "description": "Composite power score - balanced prediction"
+    },
+    "favorites": {
+      "model_blends": {
+        "favorites": 0.7,
+        "analytics": 0.3
+      },
+      "upset_threshold": 0.55,
+      "description": "Chalk-heavy - efficiency-first, minimize upsets"
+    },
+    "upsets": {
+      "model_blends": {
+        "giant_killer": 0.6,
+        "cinderella_tournament": 0.4
+      },
+      "upset_threshold": 0.3,
+      "description": "Actively seeks upsets where Cinderella score is high"
+    },
+    "analytics": {
+      "model_blends": {
+        "analytics": 1.0
+      },
+      "upset_threshold": 0.45,
+      "description": "Pure AdjEM/Barthag logistic - no heuristics"
+    },
+    "cinderella": {
+      "model_blends": {
+        "cinderella_tournament": 0.7,
+        "default": 0.3
+      },
+      "upset_threshold": 0.33,
+      "cinderella_boost": 0.1,
+      "description": "Maximizes Cinderella picks for deep runs"
+    },
+    "defensive": {
+      "model_blends": {
+        "defensive": 0.7,
+        "default": 0.3
+      },
+      "upset_threshold": 0.4,
+      "description": "Defense wins championships - defense-weighted model"
+    },
+    "momentum": {
+      "model_blends": {
+        "momentum": 0.65,
+        "default": 0.35
+      },
+      "upset_threshold": 0.38,
+      "description": "Hot teams win in March - recency-weighted model"
+    },
+    "experience": {
+      "model_blends": {
+        "experience": 0.6,
+        "default": 0.4
+      },
+      "upset_threshold": 0.42,
+      "description": "Experience and tournament history matter"
+    }
+  }
+}

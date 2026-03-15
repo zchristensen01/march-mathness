@@ -1,0 +1,22 @@
+{
+  "random_seed": 42,
+  "n_simulations": 10000,
+  "apply_conference_adjustment": true,
+  "cinderella_min_seed": 9,
+  "giant_killer_min_seed": 6,
+  "fraud_max_seed": 6,
+  "giant_killer_seed_gap_minimum": 1,
+  "probability_clip_min": 0.03,
+  "probability_clip_max": 0.97,
+  "game_std_dev": 11.0,
+  "recency_window_games": 10,
+  "output_dir": "./outputs",
+  "data_file": "./data/teams_input.csv",
+  "bracket_file": "./data/bracket_input.json",
+  "overrides_file": "./data/overrides.json",
+  "results_file": "./data/tournament_results.json",
+  "coach_scores_file": "./data/coach_scores.json",
+  "espn_api_timeout": 10,
+  "espn_groups_id": 100,
+  "max_adjEM_bonus": 4.0
+}
