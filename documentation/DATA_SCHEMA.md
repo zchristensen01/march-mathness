@@ -62,7 +62,7 @@ One row per team. The pipeline accepts up to 365 rows (full D-I season) but oper
 | `Eff_Hgt` | float | 75–84 | Higher better | Effective height (weighted by minutes) | Torvik |
 | `Raw_T` | float | 60–80 | Neutral | Raw (unadjusted) tempo | Torvik |
 | `AP_Poll_Rank` | int | 1–26 | Lower better | Final regular-season AP Poll rank. Unranked = 26. Fetched automatically by fetch_data.py via ESPN API | ESPN free API |
-| `Luck` | float | -0.10 to +0.10 | Lower better for favs | Gap between actual win% and efficiency-predicted win% (`WinPct − Barthag`). High positive = regression candidate / fraud risk. Computed from Torvik data — always available. | Computed (Torvik data) |
+| `Luck` | float | -0.10 to +0.10 | Lower better for favs | Gap between actual win% and efficiency-predicted win% (`WinPct − Barthag`). High positive = regression candidate / fraud risk (15% fraud weight). Year-to-year correlation is just 0.06 — treat as penalty modifier. Computed from Torvik data — always available. | Computed (Torvik data) |
 
 ### 1.4 Tier-4 Columns (supplementary — manually added or computed from lookup tables)
 
@@ -98,7 +98,7 @@ These are computed by the pipeline from the input columns above. Never include t
 | `PowerScore` | Composite power score — main model output from DEFAULT_WEIGHTS |
 | `CinderellaScore` | 6-component Cinderella detection score (seeds 9+ only, else 0). Full formula in `ALGORITHM.md` Section 4 |
 | `CinderellaAlertLevel` | `HIGH` (≥0.55), `WATCH` (≥0.40), blank (<0.40) — seeds 9+ only |
-| `FraudScore` | 6-component structural weakness score (seeds 1–6 only, else 0). Full formula in `ALGORITHM.md` Section 10. Components: offensive-defensive imbalance, Luck (WinPct − Barthag), recent form collapse, star dependence, conference bias, FT vulnerability |
+| `FraudScore` | 7-component structural weakness score (seeds 1–6 only, else 0). Full formula in `ALGORITHM.md` Section 10. Components: seed deviation (25%), offensive-defensive imbalance (25%), recent form collapse (15%), Luck (15%), high-variance style (10%), star dependence (5%), conference bias (5%) |
 | `FraudLevel` | `HIGH` (≥0.60), `MEDIUM` (≥0.40), `LOW` (≥0.25), blank — seeds 1–6 only |
 | `Consistency_Score` | `normalize_inverse(abs(Last_10_Games_Metric − WinPct), 0, 0.4)` — inverse of game-to-game performance variance. Research: Harvard Cox survival model found consistency significant at 5% level |
 | `Volatility_Score` | `0.6 × norm(3P_Rate) + 0.4 × (1 − Consistency_Score)` — risk metric only, NOT used in PowerScore. Shown as warning badge in UI. High = boom-or-bust team |

@@ -405,7 +405,7 @@ def run_tournament_update(config: dict):
     
     simulation_results = simulate_bracket(
         remaining_bracket,
-        blended_win_probability,
+        production_win_probability,
         n_sims=config['n_simulations'],
         seed=config['random_seed']
     )

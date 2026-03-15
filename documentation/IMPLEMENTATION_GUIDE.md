@@ -220,8 +220,8 @@ This is the largest and most important module. Build in this order:
 2. Import `PROGRAM_PRESTIGE` dict from `API_DATA_SOURCES.md` Section 6 — copy it directly as a module-level constant.
 3. `score_team(norm: dict, derived: dict, weights: dict, csi_multiplier: float) -> float` — weighted sum × 100 × CSI multiplier, rounded to 1 decimal.
 4. `score_all_teams(df, norms, deriveds, csi_multipliers, model_name) -> pd.Series`
-5. `compute_cinderella_score(team: dict, norm: dict) -> dict` — 6-component formula. **Only runs for Seed ≥ 9; returns `{"CinderellaScore": 0.0, "CinderellaAlertLevel": ""}` for seeds 1–8.** Full formula in `ALGORITHM.md` Section 4.2.
-6. `compute_fraud_score(team: dict, norm: dict) -> dict` — 6-component formula. **Only runs for Seed ≤ 6; returns `{"FraudScore": None, "FraudLevel": ""}` for seeds 7–16.** Full formula in `ALGORITHM.md` Section 10. **Note: uses `Luck` column — the proxy computed in ingestion ensures this always has a value.**
+5. `compute_cinderella_score(team: dict, norm: dict) -> dict` — 6-component formula. **Only runs for Seed ≥ 9; returns `{"CinderellaScore": 0.0, "CinderellaAlertLevel": ""}` for seeds 1–8.** Full formula in `ALGORITHM.md` Section 4.2. **Note: tempo component uses `normalize_inverse` — slower tempo = higher Cinderella score.**
+6. `compute_fraud_score(team: dict, norm: dict) -> dict` — 7-component formula. **Only runs for Seed ≤ 6; returns `{"FraudScore": None, "FraudLevel": ""}` for seeds 7–16.** Full formula in `ALGORITHM.md` Section 10. Components: seed deviation (25%), O/D imbalance (25%), form collapse (15%), luck (15%), high-variance style (10%), star dependence (5%), conference (5%). **Note: uses `Luck` column and `implied_seed()` from Section 4.1.**
 7. `get_fraud_explanation(team: dict, fraud_result: dict) -> str` — plain-language explanation string. Full implementation in `ALGORITHM.md` Section 10.4.
 8. `get_team_strengths(team: dict) -> list[str]` — returns up to 4 strength labels. Full thresholds in `ALGORITHM.md` Section 7.
 9. `generate_ranking(df, norms, deriveds, csi_mults, model_name, min_seed=None, max_seed=None) -> pd.DataFrame` — scores all teams, adds CinderellaScore, FraudScore, Consistency, Volatility, Strengths columns, sorts by model score, applies seed filters.
@@ -263,19 +263,24 @@ CSI, CSI_multiplier, Strengths, OverrideActive
 
 2. `win_probability_elo(team_a: dict, team_b: dict) -> float` — FiveThirtyEight Elo: `1 / (1 + 10^(−adjEM_diff × 30.464 / 400))`. Clip to [0.03, 0.97].
 
-3. `blended_win_probability(team_a: dict, team_b: dict) -> float` — `0.60 × normal_CDF + 0.40 × elo_style`. This is the primary function used everywhere else.
+3. `blended_win_probability(team_a: dict, team_b: dict) -> float` — `0.60 × normal_CDF + 0.40 × elo_style`.
 
-4. `predicted_spread(team_a: dict, team_b: dict) -> float` — expected point differential.
+4. `apply_era_seed_prior(model_prob_a: float, seed_a: int, seed_b: int, prior_weight: float = 0.15) -> float` — blends model probability with era-adjusted historical base rate for 6v11, 7v10, 8v9 matchups. 85% model, 15% era prior. From `ALGORITHM.md` Section 3.5.
 
-5. `confidence_tier(prob: float) -> str` — returns `"Strong Favorite"` / `"Moderate Favorite"` / `"Slight Favorite"` / `"Toss-Up"` / `"Underdog"`. Thresholds: ≥0.85, ≥0.70, ≥0.55, ≥0.45.
+5. `production_win_probability(team_a: dict, team_b: dict) -> float` — calls `blended_win_probability()` then `apply_era_seed_prior()`. **This is the primary function used everywhere else** — Monte Carlo simulation, bracket strategies, matchup calculator.
 
-6. `apply_fraud_adjustment(win_prob: float, favorite: dict, strategy: str) -> float` — reduces favorite win probability by `FraudScore × 0.08` (max −8%) in `upsets`, `cinderella`, and `analytics` strategies. From `ALGORITHM.md` Section 10.3.
+6. `predicted_spread(team_a: dict, team_b: dict) -> float` — expected point differential.
 
-7. `all_matchup_probabilities(teams: list[dict]) -> pd.DataFrame` — n×n matrix showing P(row team beats col team) for all tournament team pairs. Used for the matchup calculator UI tab.
+7. `confidence_tier(prob: float) -> str` — returns `"Strong Favorite"` / `"Moderate Favorite"` / `"Slight Favorite"` / `"Toss-Up"` / `"Underdog"`. Thresholds: ≥0.85, ≥0.70, ≥0.55, ≥0.45.
+
+8. `apply_fraud_adjustment(win_prob: float, favorite: dict, strategy: str) -> float` — reduces favorite win probability by `FraudScore × 0.08` (max −8%) in `upsets`, `cinderella`, and `analytics` strategies. From `ALGORITHM.md` Section 10.3.
+
+9. `all_matchup_probabilities(teams: list[dict]) -> pd.DataFrame` — n×n matrix showing P(row team beats col team) for all tournament team pairs. Used for the matchup calculator UI tab.
 
 **Test critical cases:**
 ```python
-from engine.win_probability import win_probability, blended_win_probability
+from engine.win_probability import (win_probability, production_win_probability,
+                                     apply_era_seed_prior)
 
 # 1 vs 16 equivalent
 assert win_probability({"AdjEM": 30, "Adj_T": 68}, {"AdjEM": -5, "Adj_T": 68}) > 0.97
@@ -284,6 +289,17 @@ assert 0.44 < win_probability({"AdjEM": 15, "Adj_T": 68}, {"AdjEM": 13, "Adj_T":
 # Probability always clipped — never exactly 0 or 1
 assert win_probability({"AdjEM": 50, "Adj_T": 68}, {"AdjEM": -20, "Adj_T": 68}) <= 0.97
 assert win_probability({"AdjEM": -20, "Adj_T": 68}, {"AdjEM": 50, "Adj_T": 68}) >= 0.03
+
+# Era seed prior pulls 6v11 toward 50/50
+raw_6v11 = win_probability({"AdjEM": 16, "Adj_T": 68, "Seed": 6},
+                            {"AdjEM": 10, "Adj_T": 68, "Seed": 11})
+adjusted_6v11 = apply_era_seed_prior(raw_6v11, 6, 11)
+assert adjusted_6v11 < raw_6v11  # era prior pulls favorite probability down
+
+# production_win_probability includes era prior automatically
+prod = production_win_probability({"AdjEM": 14, "Adj_T": 68, "Seed": 8},
+                                   {"AdjEM": 13, "Adj_T": 68, "Seed": 9})
+assert 0.35 < prod < 0.50  # era prior should pull 8-seed below 50%
 ```
 
 ---
@@ -406,7 +422,7 @@ from engine.normalization import (normalize_all_teams, compute_derived_features,
 from engine.conference import compute_all_conference_ratings, apply_csi_to_teams
 from engine.scoring import (generate_all_rankings, compute_cinderella_score,
                              compute_fraud_score, generate_bracket_summary)
-from engine.win_probability import blended_win_probability
+from engine.win_probability import production_win_probability, blended_win_probability
 from engine.simulation import simulate_bracket, generate_modal_bracket
 from engine.bracket_generator import generate_all_brackets
 from engine.output import write_all_outputs
@@ -484,7 +500,7 @@ def main():
         for region, teams in bracket['teams_by_region'].items()
     }
     simulation_results = simulate_bracket(
-        bracket_with_stats, blended_win_probability,
+        bracket_with_stats, production_win_probability,
         n_sims=config['n_simulations'], seed=config['random_seed']
     )
     print(f"  ✓ {config['n_simulations']:,} simulations complete")
@@ -499,7 +515,7 @@ def main():
             model_scores[row['Team']][model_name] = row.get('PowerScore', 50)
 
     all_brackets = generate_all_brackets(
-        bracket_with_stats, model_scores, simulation_results, blended_win_probability
+        bracket_with_stats, model_scores, simulation_results, production_win_probability
     )
     print(f"  ✓ {len(all_brackets)} bracket strategies generated")
 
@@ -759,12 +775,13 @@ with tab3:
                         st.write(explanation)
                     with c2:
                         components = {
+                            'Seed Deviation': row.get('F_SeedDeviation', 0),
                             'O/D Imbalance': row.get('F_Imbalance', 0),
-                            'Luck (Over-Record)': row.get('F_Luck', 0),
                             'Form Collapse': row.get('F_FormCollapse', 0),
+                            'Luck (Over-Record)': row.get('F_Luck', 0),
+                            'High-Variance Style': row.get('F_Variance', 0),
                             'Star Dependence': row.get('F_StarDependence', 0),
                             'Conference Bias': row.get('F_Conference', 0),
-                            'FT Vulnerability': row.get('F_FTVulnerability', 0),
                         }
                         for label, val in components.items():
                             try:
@@ -809,8 +826,8 @@ with tab5:
             row_a = df[df['Team'] == team_a_name].iloc[0].to_dict()
             row_b = df[df['Team'] == team_b_name].iloc[0].to_dict()
 
-            from engine.win_probability import blended_win_probability, predicted_spread, confidence_tier
-            p_a = blended_win_probability(row_a, row_b)
+            from engine.win_probability import production_win_probability, predicted_spread, confidence_tier
+            p_a = production_win_probability(row_a, row_b)
             spread = predicted_spread(row_a, row_b)
             tier = confidence_tier(p_a)
 
@@ -949,13 +966,13 @@ from engine.calibration import load_calibration_model, calibrate_probability
 calibration_model = load_calibration_model()
 if calibration_model:
     print("  ✓ Calibration model loaded — probabilities will be isotonic-calibrated")
-    original_win_prob = blended_win_probability
+    original_win_prob = production_win_probability
     def calibrated_win_prob(a, b):
         return calibrate_probability(original_win_prob(a, b), calibration_model)
     win_prob_fn = calibrated_win_prob
 else:
     print("  ℹ No calibration model — using raw probabilities")
-    win_prob_fn = blended_win_probability
+    win_prob_fn = production_win_probability
 ```
 
 ---
@@ -1057,7 +1074,7 @@ Strategy brackets are deterministic (one predicted winner per game). Monte Carlo
 `compute_fraud_score()` only runs for `Seed ≤ 6`. For seeds 7–16, set `FraudScore = None` and `FraudLevel = ""`. This is intentional and meaningful — the fraud concept only applies to teams expected to advance deep.
 
 ### 10. Luck metric — always computed from Torvik data
-`ingestion.py` computes `Luck = WinPct − Barthag` for all teams automatically. The Fraud Score's second-most-important component (25% weight) is always populated. No external dependency required.
+`ingestion.py` computes `Luck = WinPct − Barthag` for all teams automatically. The Fraud Score's luck component (15% weight) is always populated. No external dependency required.
 
 ### 11. Torvik requires cloudscraper, not requests
 Torvik is behind Cloudflare. Simple `requests.get()` returns 403. Use `cloudscraper.create_scraper().get()` everywhere. This is confirmed by live testing. One-line change in `fetch_data.py`.

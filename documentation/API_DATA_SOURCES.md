@@ -181,7 +181,7 @@ def fetch_torvik_early_snapshot(year: int, weeks_before: int = 4) -> pd.DataFram
 
 ## 2. Luck Metric (Computed — No External Dependency)
 
-The Luck metric measures the gap between a team's actual win% and their efficiency-predicted win%. High positive Luck = winning more games than efficiency deserves = regression candidate = fraud signal. This feeds the Fraud Score algorithm (Section 10 of `ALGORITHM.md`) at 25% weight.
+The Luck metric measures the gap between a team's actual win% and their efficiency-predicted win%. High positive Luck = winning more games than efficiency deserves = regression candidate = fraud signal. This feeds the Fraud Score algorithm (Section 10 of `ALGORITHM.md`) at 15% weight. Year-to-year correlation is just 0.06, so it serves as a penalty modifier rather than a primary predictor.
 
 Luck = `actual_win% − pythagorean_expected_win%`. Torvik's Barthag IS the Pythagorean win expectancy, so `WinPct − Barthag` produces this directly — no external dependency.
 
