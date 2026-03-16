@@ -11,7 +11,7 @@ For the 2026 NCAA Men's Basketball Tournament, I need stats for all 68 tournamen
 
 Give me a CSV table with these exact columns:
 
-Team, Seed, Region, Quad1_Wins, Last_10_Wins, Conf_Tourney_Champion
+Team, Seed, Region, NET_Rank, Quad1_Wins, Last_10_Wins, Conf_Tourney_Champion
 
 Column definitions:
 
@@ -21,13 +21,15 @@ Column definitions:
 
 - Region: The region name exactly as announced in the bracket (for example East, West, South, Midwest -- use whatever the actual region names are this year).
 
+- NET_Rank: The team's current NCAA NET ranking (integer 1-365). The official source is ncaa.com/rankings/basketball-men/d1/ncaa-mens-basketball-net-rankings. Every D1 team has a NET rank.
+
 - Quad1_Wins: Number of wins vs Quad 1 opponents. Quad 1 means games against NET ranked 1-30 at home, 1-50 on neutral court, or 1-75 on the road. You can find this on warrennolan.com or ESPN team pages under the schedule/results tab.
 
 - Last_10_Wins: Just the number of wins in the team's last 10 games, counting conference tournament games. For example if they went 8-2 in their last 10, just put 8.
 
 - Conf_Tourney_Champion: Put 1 if this team won their conference tournament. Put 0 if they did not. There are 32 conference tournaments total.
 
-Sources to check: ESPN team pages, warrennolan.com, NCAA.com, the bracket announcement itself.
+Sources to check: ESPN team pages, warrennolan.com, NCAA.com/rankings, the bracket announcement itself.
 
 Output ONLY the CSV with a header row and 68 data rows. No explanations or extra text.
 
@@ -48,10 +50,9 @@ WHAT TO DO WITH THE OUTPUT
 
 3. Fill in these columns:
    - Seed (paste directly)
+   - NET_Rank (paste directly)
    - Quad1_Wins (paste directly)
    - Last_10_Games_Metric (take the Last_10_Wins number and divide by 10 -- so 8 becomes 0.80, 6 becomes 0.60)
    - Conf_Tourney_Champion (paste directly, 0 or 1)
 
 4. If any team names had asterisks, look up the correct name in data/teams_input.csv and use that.
-
-5. NET_Rank is already in the CSV from the automated fetch. You do not need to fill it in. If you want to verify or update it, the official source is ncaa.com/rankings.

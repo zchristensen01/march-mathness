@@ -79,16 +79,18 @@ Then paste `data/team_names.txt` into each prompt in `documentation/prompts/`.
 
 Use prompts in this order:
 
-1. `documentation/prompts/01_selection_sunday_stats.txt`
-2. `documentation/prompts/02_bracket_structure.txt`
+1. `documentation/prompts/01_selection_sunday_stats.txt` (required)
+2. `documentation/prompts/02_bracket_structure.txt` (required)
 3. `documentation/prompts/03_coach_scores.txt` (recommended)
 4. `documentation/prompts/04_star_players.txt` (recommended)
 5. `documentation/prompts/05_injury_report.txt` (night before games)
+6. `documentation/prompts/06_team_experience.txt` (recommended — can run before Selection Sunday)
 
 ### Where to put outputs
 
 - Prompt 01 output -> update columns in `data/teams_input.csv`:
   - `Seed`
+  - `NET_Rank`
   - `Quad1_Wins`
   - `Last_10_Games_Metric` (wins in last 10 / 10)
   - `Conf_Tourney_Champion`
@@ -96,6 +98,7 @@ Use prompts in this order:
 - Prompt 03 output -> save as `data/coach_scores.json`
 - Prompt 04 output -> update `Star_Player_Index` overrides in `data/teams_input.csv` for listed teams only
 - Prompt 05 output -> save as `data/overrides.json`
+- Prompt 06 output -> update `Exp` and `Bench_Minutes_Pct` columns in `data/teams_input.csv`
 
 ---
 

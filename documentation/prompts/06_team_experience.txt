@@ -1,0 +1,43 @@
+TASK: Team Experience and Roster Profile
+WHEN TO RUN: Any time before running the pipeline (can be done before Selection Sunday)
+OUTPUT FORMAT: CSV values to update data/teams_input.csv
+TIME: ~5 minutes
+
+
+PROMPT TO SEND TO CLAUDE RESEARCH
+==================================
+
+Using barttorvik.com, look up the team ratings table for the 2026 NCAA Men's Basketball season. I need the following stats for the 68 tournament teams (or for all D1 teams if easier).
+
+Give me a CSV table with these exact columns:
+
+Team, Experience, Bench_Minutes_Pct
+
+Column definitions:
+
+- Team: The team's full name. Use ONLY names from the TEAM NAME LIST below.
+
+- Experience: The team's average years of college experience, weighted by minutes played. On barttorvik.com this is the "Exp" column in the team ratings table. Ranges from about 0.5 (very young/freshman-heavy) to 3.0 (veteran roster). Round to two decimal places.
+
+- Bench_Minutes_Pct: The percentage of total team minutes played by bench players (players ranked 6th or lower in minutes). On barttorvik.com, go to the team page and look at player minutes. Add up minutes for all players except the top 5 by minutes played, divide by total team minutes, multiply by 100. Round to one decimal place. If this is hard to calculate, just put the approximate bench depth rating: 25 for thin bench, 30 for average, 35 for deep bench, 40+ for very deep rotation.
+
+Sources: barttorvik.com team ratings table, barttorvik.com individual team pages.
+
+Output ONLY the CSV with a header row. No explanations or extra text.
+
+
+TEAM NAME LIST
+==============
+[After running fetch_data.py, paste the contents of data/team_names.txt here]
+
+
+WHAT TO DO WITH THE OUTPUT
+==========================
+
+1. Open data/teams_input.csv in a spreadsheet.
+
+2. For each team in the CSV output, find the matching row in teams_input.csv by the Team column.
+
+3. Fill in these columns:
+   - Exp (paste the Experience value directly into the Exp column — the column already exists)
+   - Bench_Minutes_Pct (paste directly — the column already exists)

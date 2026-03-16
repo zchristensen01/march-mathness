@@ -1,0 +1,94 @@
+---
+description: Pipeline integrity audit — verify data flow from Claude Research prompts through scoring
+alwaysApply: true
+---
+
+# Pipeline Integrity Audit
+
+When making changes to any engine module, prompt file, or data schema, verify the full data pipeline still holds together. Several structural bugs were found and fixed on 2026-03-15 — this rule exists to prevent regressions and catch new gaps.
+
+## Data Flow (verify each link)
+
+```
+Claude Research prompts (documentation/prompts/01-06)
+  → user pastes into data/teams_input.csv + data/*.json
+    → main.py reads config.json for file paths
+      → engine/ingestion.py load_teams() reads CSV + overrides.json
+      → main.py _apply_coach_scores() reads coach_scores.json
+        → engine/normalization.py normalize_team() + compute_derived_features()
+          → engine/scoring.py generate_all_rankings()
+            → engine/simulation.py simulate_bracket()
+```
+
+## Prompt → Column → Code Mapping (must stay in sync)
+
+| Prompt | Output file | Columns written | Read by |
+|--------|------------|-----------------|---------|
+| 01 | teams_input.csv | Seed, NET_Rank, Quad1_Wins, Last_10_Games_Metric, Conf_Tourney_Champion | ingestion.load_teams() |
+| 02 | bracket_input.json | team, seed, region, slot, play_in fields | ingestion.load_bracket() |
+| 03 | coach_scores.json | JSON {team: score} | main._apply_coach_scores() → Coach_Tourney_Experience |
+| 04 | teams_input.csv | Star_Player_Index (overrides only) | ingestion.load_teams() |
+| 05 | overrides.json | AdjO/AdjD deltas per team | ingestion.apply_overrides() |
+| 06 | teams_input.csv | Exp, Bench_Minutes_Pct | ingestion.load_teams() |
+
+## Columns That Must Exist as Placeholders in fetch_data.py
+
+These are created as NaN so users can paste prompt output without adding columns:
+`Seed, NET_Rank, Quad1_Wins, Last_10_Games_Metric, Conf_Tourney_Champion, Won_Play_In, Star_Player_Index, Bench_Minutes_Pct, Exp, Elite_SOS, Conf_Strength_Weight`
+
+If you add a new column that prompts populate → add it to both `PLACEHOLDER_COLUMNS` and `SCHEMA_COLUMNS` in `scripts/fetch_data.py`.
+
+## Normalization _inv Aliases (engine/normalization.py)
+
+Any feature with `"inverse"` direction in `FEATURE_RANGES` is automatically inverted AND given an `_inv` alias during normalization (line 96 of `normalize_team()`). The `_inv_aliases` list at line 108 is a redundant safety net. Both mechanisms create the same keys.
+
+If you add a new inverse feature to `FEATURE_RANGES` → the `_inv` alias is created automatically. No manual step needed.
+
+## SeedMismatch_norm (main.py _prepare_norms)
+
+`SeedMismatch_norm` is computed in `main.py _prepare_norms()` and injected into each team's norms dict BEFORE scoring runs. This is necessary because `scoring.py seed_mismatch()` needs Seed and CompRank from team data, and `generate_ranking()` computes SeedMismatch for the DataFrame too late for model scoring. The cinderella_tournament model assigns 25% weight to this key.
+
+## Derived Metrics (engine/normalization.py compute_derived_features)
+
+Each derived metric's inputs must resolve to non-0.5 values for the metric to have discriminating power. Verify:
+- `PPP_Off` / `PPP_Def` — computed from AdjO/AdjD in `engine/ingestion.py _ensure_adjem()`
+- `TournamentReadiness` — depends on Barthag (auto), Exp (prompt 06), Quad1_Wins (prompt 01)
+- `Physicality` — depends on OR% (auto), Blk_% (auto), FTR (auto), Eff_Hgt (defaults to 79.0)
+- `BallMovement` — depends on AST_TO (defaults to 0.5 — no source), Ast_% (auto), Op_Ast_%_inv (auto)
+
+## Known Defaulting Columns (acceptable)
+
+These default because no reliable automated source exists:
+- `Massey_Rank` → 150 (JS-rendered page, not scrapeable)
+- `Avg_Hgt` / `Eff_Hgt` → 77.0 / 79.0 (Torvik PHP endpoints are Cloudflare-blocked)
+- `AST_TO` → 0.5 (not computable from available data)
+- `Star_Player_Index` → 5.0 unless overridden by prompt 04
+- `Bench_Minutes_Pct` → 30.0 unless overridden by prompt 06
+
+## Verification Checklist
+
+When auditing, run this test:
+
+```python
+from engine.ingestion import load_teams
+from engine.normalization import normalize_team, compute_derived_features
+
+df = load_teams('data/teams_input.csv')
+duke = df[df['Team'] == 'Duke'].iloc[0]
+norm = normalize_team(duke.to_dict())
+derived = compute_derived_features(norm)
+
+# 1. All _inv keys should exist and differ from 0.5
+for key in ['3P_%_D_inv', '2P_%_D_inv', 'Opp_FTR_inv', 'Blked_%_inv', 'Op_Ast_%_inv']:
+    assert key in norm and abs(norm[key] - 0.5) > 0.01, f"{key} missing or defaulting"
+
+# 2. PPP_Off should be AdjO/100
+assert abs(duke['PPP_Off'] - duke['AdjO']/100) < 0.001
+
+# 3. All derived features should have non-trivial values
+for name, val in derived.items():
+    assert isinstance(val, float), f"{name} is not float"
+
+# 4. All SCHEMA_COLUMNS in fetch_data.py should include every column
+#    referenced by FEATURE_RANGES keys, DEFAULTS keys, and model weight keys
+```

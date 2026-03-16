@@ -129,6 +129,10 @@ def _ensure_adjem(df: pd.DataFrame) -> pd.DataFrame:
     df["AdjO"] = adjo
     df["AdjD"] = adjd
     df["AdjEM"] = (adjo - adjd).round(3)
+    if "PPP_Off" not in df.columns:
+        df["PPP_Off"] = (adjo / 100.0).round(4)
+    if "PPP_Def" not in df.columns:
+        df["PPP_Def"] = (adjd / 100.0).round(4)
     return df
 
 

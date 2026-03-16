@@ -101,17 +101,18 @@ def normalize_team(team_row: pd.Series | dict[str, Any]) -> dict[str, float]:
             norm_value = normalize_value(raw_value, min_val, max_val)
             norm[feature] = norm_value
 
-    # Compatibility keys used by scoring weights.
-    if "TO%" in norm:
-        norm["TO%_inv"] = norm["TO%"]
-    if "Opp_eFG%" in norm:
-        norm["Opp_eFG%_inv"] = norm["Opp_eFG%"]
-    if "CompRank" in norm:
-        norm["CompRank_inv"] = norm["CompRank"]
-    if "SOS" in norm:
-        norm["SOS_inv"] = norm["SOS"]
-    if "AdjD" in norm:
-        norm["AdjD_inv"] = norm["AdjD"]
+    # Create _inv aliases so model weights and derived features can reference
+    # them by either name.  The base key is already normalized with the correct
+    # direction (inverse features are already inverted), so the _inv alias is
+    # just a convenience for readability in weights.json and derived formulas.
+    _inv_aliases = [
+        "TO%", "Opp_eFG%", "CompRank", "SOS", "AdjD",
+        "3P_%_D", "2P_%_D", "Opp_FTR", "Blked_%", "Op_Ast_%",
+    ]
+    for key in _inv_aliases:
+        if key in norm:
+            norm[f"{key}_inv"] = norm[key]
+
     if "Adj_T" in norm:
         norm["Adj_T_inv"] = normalize_inverse(team.get("Adj_T"), 60, 80)
     if "SeedMismatch" in team:

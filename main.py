@@ -19,10 +19,11 @@ from engine.normalization import (
     compute_consistency_score,
     compute_derived_features,
     compute_volatility_score,
-    normalize_all_teams
+    normalize_all_teams,
+    normalize_value
 )
 from engine.output import write_all_outputs
-from engine.scoring import generate_all_rankings
+from engine.scoring import generate_all_rankings, seed_mismatch
 from engine.simulation import generate_modal_bracket, simulate_bracket
 from engine.tournament_bonus import apply_tournament_bonuses, build_remaining_bracket
 from engine.win_probability import production_win_probability
@@ -33,6 +34,22 @@ def _load_config(path: str) -> dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Config not found: {path}")
     return json.loads(config_path.read_text(encoding="utf-8"))
+
+
+def _apply_coach_scores(df: pd.DataFrame, coach_path: str | None) -> None:
+    """Apply coach_scores.json to Coach_Tourney_Experience column in-place."""
+    if not coach_path:
+        return
+    p = Path(coach_path)
+    if not p.exists():
+        return
+    scores = json.loads(p.read_text(encoding="utf-8"))
+    if not scores or len(scores) <= 1:
+        return
+    default = float(scores.get("_default", 3))
+    df["Coach_Tourney_Experience"] = df["Team"].apply(
+        lambda team: float(scores.get(team, default))
+    )
 
 
 def _prepare_norms(df: pd.DataFrame) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
@@ -49,6 +66,15 @@ def _prepare_norms(df: pd.DataFrame) -> tuple[list[dict[str, float]], list[dict[
         win_pct = float(wins) / float(games) if pd.notna(wins) and pd.notna(games) and games > 0 else 0.65
         last_10 = float(row_dict.get("Last_10_Games_Metric", 0.65))
         df.at[i, "MomentumDelta"] = round(last_10 - win_pct, 4)
+
+        actual_seed = pd.to_numeric(pd.Series([row_dict.get("Seed")]), errors="coerce").iloc[0]
+        comp_rank = pd.to_numeric(pd.Series([row_dict.get("CompRank")]), errors="coerce").iloc[0]
+        if pd.notna(actual_seed) and pd.notna(comp_rank):
+            sm = seed_mismatch(int(actual_seed), int(comp_rank))
+        else:
+            sm = 0.0
+        df.at[i, "SeedMismatch"] = sm
+        norms[i]["SeedMismatch_norm"] = normalize_value(sm, 0, 1)
     return norms, deriveds
 
 
@@ -115,6 +141,7 @@ def run_tournament_update(config: dict[str, Any]) -> None:
     print("\n🏀 MID-TOURNAMENT UPDATE MODE")
     print("=" * 67)
     df = load_teams(config["data_file"], config.get("overrides_file"))
+    _apply_coach_scores(df, config.get("coach_scores_file"))
     results = fetch_results(config)
     completed_games = results.get("completed_games", [])
     print(f"  ✓ {len(completed_games)} completed games found")
@@ -184,6 +211,7 @@ def main() -> None:
     t0 = time.time()
 
     df = load_teams(config["data_file"], config.get("overrides_file"))
+    _apply_coach_scores(df, config.get("coach_scores_file"))
     norms, deriveds = _prepare_norms(df)
     conf_ratings = compute_all_conference_ratings(df)
     df = apply_csi_to_teams(df, conf_ratings)
