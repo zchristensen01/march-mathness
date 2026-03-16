@@ -308,10 +308,13 @@ with tab6:
                 for m in region_matchups:
                     ta = m["team_a"]
                     tb = m["team_b"]
-                    prob = m["win_prob_a"] * 100
+                    pick_name = m["pick"]
+                    win_prob_a = float(m["win_prob_a"])
+                    # Always display probability for the displayed pick, not team_a.
+                    prob = (win_prob_a if pick_name == ta["name"] else 1.0 - win_prob_a) * 100
                     icon = m["verdict_icon"]
                     verdict = m["verdict"]
-                    pick = m["pick"]
+                    pick = pick_name
                     spread_val = m.get("predicted_spread", 0)
                     col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
                     with col1:

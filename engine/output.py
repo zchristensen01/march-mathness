@@ -120,7 +120,9 @@ def classify_matchup_verdict(
             "pick": str(team_a.get("Team")),
             "pick_strength": "STRONG"
         }
-    if is_true_upset_spot and (win_prob_a < 0.5 or (cinderella_score_b >= 0.55 and models_picking_upset >= 4)):
+    # Reserve "UPSET ALERT" for true probability flips only. High Cinderella/model
+    # disagreement without a flipped edge should remain a toss-up or lean.
+    if is_true_upset_spot and win_prob_a < 0.5:
         return {
             "verdict": "UPSET ALERT",
             "icon": "⚡",
