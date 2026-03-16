@@ -10,6 +10,7 @@ from typing import Any, Callable
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from engine.normalization import compute_rank_divergence
 from engine.win_probability import predicted_spread
 
 log = logging.getLogger(__name__)
@@ -93,7 +94,17 @@ def classify_matchup_verdict(
     models_picking_upset: int
 ) -> dict[str, str]:
     """Classify matchup into verdict label and visual metadata."""
-    if 0.55 <= win_prob_a <= 0.75 and cinderella_score_b >= 0.40 and models_picking_upset >= 3:
+    seed_a = int(team_a.get("Seed", 16))
+    seed_b = int(team_b.get("Seed", 16))
+    seed_gap = max(0, seed_b - seed_a)
+    is_true_upset_spot = seed_gap >= 2
+
+    if (
+        is_true_upset_spot
+        and 0.55 <= win_prob_a <= 0.75
+        and cinderella_score_b >= 0.40
+        and models_picking_upset >= 3
+    ):
         return {
             "verdict": "TRAP GAME",
             "icon": "⚠️",
@@ -109,7 +120,7 @@ def classify_matchup_verdict(
             "pick": str(team_a.get("Team")),
             "pick_strength": "STRONG"
         }
-    if win_prob_a < 0.5 or (cinderella_score_b >= 0.55 and models_picking_upset >= 4):
+    if is_true_upset_spot and (win_prob_a < 0.5 or (cinderella_score_b >= 0.55 and models_picking_upset >= 4)):
         return {
             "verdict": "UPSET ALERT",
             "icon": "⚡",
@@ -125,11 +136,19 @@ def classify_matchup_verdict(
             "pick": str(team_a.get("Team")),
             "pick_strength": "MEDIUM"
         }
+    if win_prob_a <= 0.35:
+        return {
+            "verdict": "LEAN",
+            "icon": "→",
+            "color": "#2da44e",
+            "pick": str(team_b.get("Team")),
+            "pick_strength": "MEDIUM"
+        }
     return {
         "verdict": "TOSS-UP",
         "icon": "🎲",
         "color": "#f59e0b",
-        "pick": str(team_a.get("Team")),
+        "pick": str(team_a.get("Team")) if win_prob_a >= 0.5 else str(team_b.get("Team")),
         "pick_strength": "WEAK"
     }
 
@@ -168,9 +187,18 @@ def _build_verdict_entry(
     l_name = str(lower_seed.get("Team"))
     upset_picks = _count_upset_picks(h_name, l_name, brackets) if brackets else 0
     verdict = classify_matchup_verdict(higher_seed, lower_seed, p_higher, c_score, upset_picks)
+    higher_divergence = compute_rank_divergence(higher_seed, {})
+    lower_divergence = compute_rank_divergence(lower_seed, {})
     seed_a = int(higher_seed.get("Seed", 16))
     seed_b = int(lower_seed.get("Seed", 16))
     matchup_key = (min(seed_a, seed_b), max(seed_a, seed_b))
+
+    ranking_signal_flags: list[str] = []
+    if seed_a <= 6 and higher_divergence > 0.65:
+        ranking_signal_flags.append("Committee darling ⚠")
+    if seed_b >= 9 and lower_divergence < 0.35:
+        ranking_signal_flags.append("Analytics value pick ✓")
+
     return {
         "region": region,
         "round": round_name,
@@ -201,6 +229,9 @@ def _build_verdict_entry(
         "pick": verdict["pick"],
         "pick_strength": verdict["pick_strength"],
         "volatility_flag": bool(float(lower_seed.get("Volatility_Score") or 0.0) > 0.65),
+        "rank_divergence_a": round(float(higher_divergence), 3),
+        "rank_divergence_b": round(float(lower_divergence), 3),
+        "ranking_signal_flags": ranking_signal_flags,
     }
 
 

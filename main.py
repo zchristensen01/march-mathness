@@ -54,7 +54,7 @@ def _apply_coach_scores(df: pd.DataFrame, coach_path: str | None) -> None:
 
 def _prepare_norms(df: pd.DataFrame) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
     norms = normalize_all_teams(df)
-    deriveds = [compute_derived_features(n) for n in norms]
+    deriveds = [compute_derived_features(norms[i], row.to_dict()) for i, (_, row) in enumerate(df.iterrows())]
     for i, (_, row) in enumerate(df.iterrows()):
         row_dict = row.to_dict()
         norms[i]["Consistency_Score"] = compute_consistency_score(row_dict)

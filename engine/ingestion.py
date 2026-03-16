@@ -91,6 +91,19 @@ NUMERIC_DEFAULT_COLUMNS: list[str] = [
     "TRank_Early"
 ]
 
+RANK_SYSTEM_WEIGHTS: dict[str, float] = {
+    "NET_Rank": 0.45,
+    "Massey_Rank": 0.30,
+    "Torvik_Rank": 0.25,
+}
+
+COMPRANK_CONFIDENCE_BY_COUNT: dict[int, float] = {
+    0: 0.0,
+    1: 0.5,
+    2: 0.75,
+    3: 1.0,
+}
+
 
 class IngestionError(ValueError):
     """Raised for malformed ingestion inputs."""
@@ -150,7 +163,10 @@ def compute_luck(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def apply_defaults(df: pd.DataFrame) -> pd.DataFrame:
+def apply_defaults(
+    df: pd.DataFrame,
+    rank_availability: dict[str, pd.Series] | None = None
+) -> pd.DataFrame:
     """Fill deterministic defaults defined by schema docs."""
     for column, default in DEFAULTS.items():
         if column not in df.columns:
@@ -163,10 +179,51 @@ def apply_defaults(df: pd.DataFrame) -> pd.DataFrame:
     if "DR%" not in df.columns and "Opp_OR%" in df.columns:
         opp_or = pd.to_numeric(df["Opp_OR%"], errors="coerce")
         df["DR%"] = (100.0 - opp_or).clip(lower=0, upper=100)
-    if "CompRank" not in df.columns:
-        rank_cols = [c for c in ("Torvik_Rank", "Massey_Rank", "NET_Rank") if c in df.columns]
-        if rank_cols:
-            df["CompRank"] = df[rank_cols].mean(axis=1, skipna=True)
+    df = compute_rank_features(df, rank_availability=rank_availability)
+    return df
+
+
+def compute_rank_features(
+    df: pd.DataFrame,
+    rank_availability: dict[str, pd.Series] | None = None
+) -> pd.DataFrame:
+    """Compute rank-derived features used by downstream scoring."""
+    available_cols = [col for col in RANK_SYSTEM_WEIGHTS if col in df.columns]
+    if not available_cols:
+        if "CompRank_Confidence" not in df.columns:
+            df["CompRank_Confidence"] = 0.0
+        return df
+
+    for col in available_cols:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    weighted_sum = pd.Series(np.zeros(len(df), dtype=float), index=df.index)
+    weight_total = pd.Series(np.zeros(len(df), dtype=float), index=df.index)
+
+    for col, weight in RANK_SYSTEM_WEIGHTS.items():
+        if col not in df.columns:
+            continue
+        values = pd.to_numeric(df[col], errors="coerce")
+        if rank_availability is not None and col in rank_availability:
+            present = rank_availability[col].reindex(df.index, fill_value=False).astype(bool)
+        else:
+            present = values.notna()
+        weighted_sum = weighted_sum + values.where(present, 0.0).fillna(0.0) * weight
+        weight_total = weight_total + present.astype(float) * weight
+
+    comp_rank = weighted_sum / weight_total.replace(0.0, np.nan)
+    df["CompRank"] = comp_rank
+
+    availability_count = pd.Series(0, index=df.index, dtype="int64")
+    for col in RANK_SYSTEM_WEIGHTS:
+        if col in df.columns:
+            if rank_availability is not None and col in rank_availability:
+                present = rank_availability[col].reindex(df.index, fill_value=False).astype(bool)
+            else:
+                present = pd.to_numeric(df[col], errors="coerce").notna()
+            availability_count = availability_count + present.astype(int)
+
+    df["CompRank_Confidence"] = availability_count.map(COMPRANK_CONFIDENCE_BY_COUNT).fillna(0.0)
     return df
 
 
@@ -181,7 +238,11 @@ def apply_conf_tourney_champion_bonus(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def apply_overrides(df: pd.DataFrame, overrides_path: str | None = None) -> pd.DataFrame:
+def apply_overrides(
+    df: pd.DataFrame,
+    overrides_path: str | None = None,
+    rank_availability: dict[str, pd.Series] | None = None
+) -> pd.DataFrame:
     """Apply override JSON data in delta or absolute mode."""
     if not overrides_path:
         return df
@@ -214,9 +275,12 @@ def apply_overrides(df: pd.DataFrame, overrides_path: str | None = None) -> pd.D
                     df.at[i, key] = base + float(value)
                 else:
                     df.at[i, key] = float(value)
+                if rank_availability is not None and key in rank_availability:
+                    rank_availability[key].iat[i] = True
         df.at[i, "OverrideActive"] = 1
     # Recompute AdjEM if O/D changed.
     df = _ensure_adjem(df)
+    df = compute_rank_features(df, rank_availability=rank_availability)
     return df
 
 
@@ -246,11 +310,17 @@ def load_teams(csv_path: str, overrides_path: str | None = None) -> pd.DataFrame
     df = pd.read_csv(path)
     df = normalize_aliases(df)
     df = _parse_record_fields(df)
+    rank_availability: dict[str, pd.Series] = {}
+    for col in RANK_SYSTEM_WEIGHTS:
+        if col in df.columns:
+            rank_availability[col] = pd.to_numeric(df[col], errors="coerce").notna()
+        else:
+            rank_availability[col] = pd.Series(False, index=df.index)
     df = _ensure_adjem(df)
     df = compute_luck(df)
-    df = apply_defaults(df)
+    df = apply_defaults(df, rank_availability=rank_availability)
     df = apply_conf_tourney_champion_bonus(df)
-    df = apply_overrides(df, overrides_path)
+    df = apply_overrides(df, overrides_path, rank_availability=rank_availability)
 
     missing = validate_columns(df)
     if missing:

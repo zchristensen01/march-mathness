@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from engine.normalization import normalize_inverse, normalize_value
+from engine.normalization import compute_rank_divergence, normalize_inverse, normalize_value
 
 PROGRAM_PRESTIGE: dict[str, int] = {
     "Kansas": 10,
@@ -60,8 +60,7 @@ MODEL_NAME_TO_COLUMN: dict[str, str] = {
     "giant_killer": "GiantKillerScore",
     "cinderella_tournament": "CinderellaTournamentScore",
     "favorites": "FavoritesScore",
-    "analytics": "AnalyticsScore",
-    "experience": "ExperienceScore"
+    "analytics": "AnalyticsScore"
 }
 
 RANKING_COLUMN_ORDER: list[str] = [
@@ -89,7 +88,9 @@ RANKING_COLUMN_ORDER: list[str] = [
     "WAB",
     "Torvik_Rank",
     "NET_Rank",
+    "Massey_Rank",
     "CompRank",
+    "CompRank_Confidence",
     "AP_Poll_Rank",
     "Coach_Tourney_Experience",
     "Program_Prestige",
@@ -102,7 +103,9 @@ RANKING_COLUMN_ORDER: list[str] = [
     "C_Turnover",
     "C_Tempo",
     "C_Rebounding",
+    "C_RankValue",
     "SeedMismatch",
+    "RankDivergence",
     "FraudScore",
     "FraudLevel",
     "FraudExplanation",
@@ -113,6 +116,7 @@ RANKING_COLUMN_ORDER: list[str] = [
     "F_Variance",
     "F_StarDependence",
     "F_Conference",
+    "F_RankDivergence",
     "Consistency_Score",
     "Volatility_Score",
     "CSI",
@@ -201,7 +205,7 @@ def score_all_teams(
 
 
 def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> dict[str, Any]:
-    """Compute 6-component Cinderella score for seeds >= 9."""
+    """Compute Cinderella score for seeds >= 9."""
     seed = int(team.get("Seed", 16))
     if seed < 9:
         return {"CinderellaScore": 0.0, "CinderellaAlertLevel": "-"}
@@ -224,13 +228,16 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
     tov_margin_score = norm.get("Opp_TO%", 0.5) * 0.6 + norm.get("TO%_inv", 0.5) * 0.4
     tempo_score = normalize_inverse(float(team.get("Adj_T", 68.0)), 60, 80)
     reb_score = norm.get("OR%", 0.5)
+    rank_divergence = compute_rank_divergence(team, norm)
+    rank_value_score = 1.0 - rank_divergence
 
     cinderella_score = (
         0.35 * seed_mis
         + 0.28 * defense_signal
-        + 0.22 * tov_margin_score
+        + 0.19 * tov_margin_score
         + 0.08 * tempo_score
         + 0.07 * reb_score
+        + 0.03 * rank_value_score
     )
 
     if cinderella_score >= 0.55:
@@ -247,12 +254,14 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
         "C_Defense": round(float(defense_signal), 3),
         "C_Turnover": round(float(tov_margin_score), 3),
         "C_Tempo": round(float(tempo_score), 3),
-        "C_Rebounding": round(float(reb_score), 3)
+        "C_Rebounding": round(float(reb_score), 3),
+        "C_RankValue": round(float(rank_value_score), 3),
+        "RankDivergence": round(float(rank_divergence), 3),
     }
 
 
 def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[str, Any]:
-    """Compute 7-component Fraud score for seeds <= 6."""
+    """Compute Fraud score for seeds <= 6."""
     seed = int(team.get("Seed", 16))
     if seed > 6:
         return {"FraudScore": 0.0, "FraudLevel": "-"}
@@ -289,18 +298,20 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
 
     conf = str(team.get("Conference", "Unknown"))
     conf_fraud = FRAUD_CONFERENCE_PENALTIES.get(conf, 0.15)
+    rank_divergence = compute_rank_divergence(team, norm)
 
     if float(team.get("Adj_T", 68.0)) < 65.0 and seed <= 4:
         imbalance_score = min(1.0, imbalance_score + 0.10)
 
     fraud_score = (
-        0.25 * seed_deviation_score
-        + 0.25 * imbalance_score
-        + 0.15 * form_collapse_score
-        + 0.15 * luck_score
+        0.23 * seed_deviation_score
+        + 0.23 * imbalance_score
+        + 0.14 * form_collapse_score
+        + 0.14 * luck_score
         + 0.10 * variance_score
         + 0.05 * dependence_score
-        + 0.05 * conf_fraud
+        + 0.03 * conf_fraud
+        + 0.08 * rank_divergence
     )
 
     if fraud_score >= 0.60:
@@ -321,7 +332,9 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
         "F_Luck": round(float(luck_score), 3),
         "F_Variance": round(float(variance_score), 3),
         "F_StarDependence": round(float(dependence_score), 3),
-        "F_Conference": round(float(conf_fraud), 3)
+        "F_Conference": round(float(conf_fraud), 3),
+        "F_RankDivergence": round(float(rank_divergence), 3),
+        "RankDivergence": round(float(rank_divergence), 3),
     }
 
 
@@ -344,6 +357,8 @@ def get_fraud_explanation(team: dict[str, Any], fraud_result: dict[str, Any]) ->
         reasons.append(f"{team.get('Conference', 'conference')} historical underperformance")
     if fraud_result.get("F_StarDependence", 0) >= 0.60:
         reasons.append("single-player dependence")
+    if fraud_result.get("F_RankDivergence", 0) >= 0.65:
+        reasons.append("committee ranking outpaces efficiency profile")
     if not reasons:
         return "Mild concerns, no single major red flag."
     return "Fraud risk: " + "; ".join(reasons) + "."
@@ -409,10 +424,12 @@ def generate_ranking(
     cinderella_values = []
     fraud_values = []
     strengths = []
+    rank_divergence_values: list[float] = []
     for i, (_, row) in enumerate(work.iterrows()):
         row_dict = row.to_dict()
         row_norm = dict(norms[i])
         row_norm["Consistency_Score"] = float(row_dict.get("Consistency_Score", row_norm.get("Consistency_Score", 0.5)))
+        rank_divergence_values.append(compute_rank_divergence(row_dict, row_norm))
         c_result = compute_cinderella_score(row_dict, row_norm)
         f_result = compute_fraud_score(row_dict, row_norm)
         cinderella_values.append(c_result)
@@ -429,6 +446,7 @@ def generate_ranking(
         get_fraud_explanation(work.iloc[i].to_dict(), fraud_values[i]) for i in range(len(work))
     ]
     work["Strengths"] = strengths
+    work["RankDivergence"] = [round(float(v), 3) for v in rank_divergence_values]
     work["SeedMismatch"] = [
         float(seed_mismatch(int(work.at[i, "Seed"]), int(work.at[i, "CompRank"])))
         if pd.notna(work.at[i, "Seed"]) and pd.notna(work.at[i, "CompRank"])
@@ -449,9 +467,9 @@ def generate_ranking(
 
     numeric_fill_cols = [
         "C_SeedMismatch", "C_Defense", "C_Turnover", "C_Tempo", "C_Rebounding",
-        "F_SeedDeviation", "F_Imbalance", "F_FormCollapse", "F_Luck",
+        "C_RankValue", "F_SeedDeviation", "F_Imbalance", "F_FormCollapse", "F_Luck",
         "F_Variance", "F_StarDependence", "F_Conference",
-        "CinderellaScore", "FraudScore",
+        "F_RankDivergence", "CinderellaScore", "FraudScore",
     ]
     for col in numeric_fill_cols:
         if col in work.columns:

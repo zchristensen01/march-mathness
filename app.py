@@ -25,6 +25,58 @@ OUTPUTS = Path("outputs")
 DATA_DIR = Path("data")
 
 
+def _build_metric_leaderboards(power_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Create sortable leaderboards for single-dimension team traits."""
+    base_cols = ["Team", "Seed", "Conference"]
+    working = power_df.copy()
+
+    for col in ["AdjO", "AdjD", "Adj_T", "OR%", "Blk_%", "FTR", "eFG%", "Opp_TO%", "TO%", "Barthag"]:
+        if col in working.columns:
+            working[col] = pd.to_numeric(working[col], errors="coerce")
+
+    # Physicality blends board control, rim protection, and foul pressure.
+    physicality_parts: list[pd.Series] = []
+    for col in ["OR%", "Blk_%", "FTR"]:
+        if col in working.columns:
+            col_series = working[col]
+            span = col_series.max() - col_series.min()
+            if pd.notna(span) and float(span) > 0:
+                norm_col = (col_series - col_series.min()) / span
+                physicality_parts.append(norm_col.fillna(0.5))
+    if physicality_parts:
+        working["Physicality_Index"] = sum(physicality_parts) / len(physicality_parts)
+
+    metric_specs: list[tuple[str, str, bool, str]] = [
+        ("Strongest Offense", "AdjO", False, "{:.1f}"),
+        ("Strongest Defense", "AdjD", True, "{:.1f}"),
+        ("Fastest Pace", "Adj_T", False, "{:.1f}"),
+        ("Most Physical", "Physicality_Index", False, "{:.3f}"),
+        ("Best Shooting", "eFG%", False, "{:.1f}%"),
+        ("Best Ball Security", "TO%", True, "{:.1f}%"),
+        ("Most Turnover Pressure", "Opp_TO%", False, "{:.1f}%"),
+        ("Best Offensive Rebounding", "OR%", False, "{:.1f}%"),
+        ("Best Overall Efficiency", "Barthag", False, "{:.3f}")
+    ]
+
+    leaderboards: dict[str, pd.DataFrame] = {}
+    for label, metric_col, ascending, value_fmt in metric_specs:
+        if metric_col not in working.columns:
+            continue
+        metric_view = (
+            working[base_cols + [metric_col]]
+            .dropna(subset=[metric_col])
+            .sort_values(metric_col, ascending=ascending)
+            .copy()
+        )
+        if metric_view.empty:
+            continue
+        metric_view["Rank"] = range(1, len(metric_view) + 1)
+        metric_view["Value"] = metric_view[metric_col].map(value_fmt.format)
+        leaderboards[label] = metric_view[["Rank"] + base_cols + ["Value"]]
+
+    return leaderboards
+
+
 def _build_bracket_with_stats(
     bracket: dict, team_lookup: dict[str, dict]
 ) -> dict[str, list[dict]]:
@@ -129,9 +181,10 @@ if update_button:
         st.error("Update failed.")
         st.code(log_text[-2000:])
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
     [
         "📊 Power Rankings",
+        "📈 Team Traits",
         "🔮 Cinderella Scores",
         "💀 Fraud Alerts",
         "🏆 Conference Strength",
@@ -162,18 +215,56 @@ with tab1:
         st.dataframe(view, use_container_width=True, hide_index=True)
 
 with tab2:
-    st.subheader("Cinderella Rankings (Seeds 9+)")
+    st.subheader("Team Trait Leaderboards")
+    power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
+    if power_df is None:
+        st.info("Run analysis to generate team trait leaderboards.")
+    else:
+        leaderboards = _build_metric_leaderboards(power_df)
+        if not leaderboards:
+            st.info("No supported metric columns found in `power_rankings.csv`.")
+        else:
+            c1, c2 = st.columns([3, 1])
+            with c1:
+                metric_name = st.selectbox("Ranking category", list(leaderboards.keys()))
+            with c2:
+                max_teams = max(5, len(power_df))
+                top_n = st.slider("Teams shown", 5, max_teams, min(16, max_teams))
+            st.dataframe(
+                leaderboards[metric_name].head(top_n),
+                use_container_width=True,
+                hide_index=True
+            )
+
+with tab3:
+    st.subheader("Cinderella + Giant Killer Rankings")
     cind_df = _read_csv(OUTPUTS / "rankings" / "cinderella_rankings.csv")
+    giant_df = _read_csv(OUTPUTS / "rankings" / "giant_killer_rankings.csv")
     if cind_df is None:
         st.info("Run analysis to generate Cinderella rankings.")
     else:
+        st.markdown("**Cinderella table (seeds 9+)**")
         alert = st.selectbox("Alert filter", ["All", "HIGH", "WATCH"])
         view = cind_df
         if alert != "All" and "CinderellaAlertLevel" in view.columns:
             view = view[view["CinderellaAlertLevel"] == alert]
         st.dataframe(view, use_container_width=True, hide_index=True)
 
-with tab3:
+    st.divider()
+    st.markdown("**Giant killer table (best upset profiles)**")
+    if giant_df is None:
+        st.info("Run analysis to generate giant killer rankings.")
+    else:
+        # Giant killer rankings are intentionally restricted to likely upset seeds.
+        seed_min, seed_max = st.slider("Giant killer seed range", 6, 16, (8, 13))
+        giant_view = giant_df.copy()
+        if "Seed" in giant_view.columns:
+            giant_view = giant_view[
+                pd.to_numeric(giant_view["Seed"], errors="coerce").between(seed_min, seed_max)
+            ]
+        st.dataframe(giant_view, use_container_width=True, hide_index=True)
+
+with tab4:
     st.subheader("Fraud Alerts (Seeds 1-6)")
     power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
     if power_df is None or "FraudLevel" not in power_df.columns:
@@ -182,7 +273,7 @@ with tab3:
         fraud = power_df[power_df["FraudLevel"].isin(["HIGH", "MEDIUM", "LOW"])].sort_values("FraudScore", ascending=False)
         st.dataframe(fraud, use_container_width=True, hide_index=True)
 
-with tab4:
+with tab5:
     st.subheader("Conference Strength")
     conf_df = _read_csv(OUTPUTS / "rankings" / "conference_strength.csv")
     if conf_df is None:
@@ -192,7 +283,7 @@ with tab4:
         if "Conference" in conf_df.columns and "CSI_multiplier" in conf_df.columns:
             st.bar_chart(conf_df.set_index("Conference")[["CSI_multiplier"]])
 
-with tab5:
+with tab6:
     st.subheader("Matchup Calculator")
     power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
     verdicts_data = _read_json(OUTPUTS / "bracket_matchup_verdicts.json")
@@ -251,7 +342,7 @@ with tab5:
             m2.metric("Predicted spread", f"{team_a_name} {spread:+.1f}")
             m3.metric("Confidence", tier)
 
-with tab6:
+with tab7:
     st.subheader("Monte Carlo Simulation")
     st.caption("Simulate the entire tournament thousands of times to estimate each team's probability of advancing.")
 
@@ -327,7 +418,7 @@ with tab6:
             sim_df = sim_df.rename(columns={c: f"{c} %" for c in pct_cols})
         st.dataframe(sim_df, use_container_width=True, hide_index=True)
 
-with tab7:
+with tab8:
     st.subheader("Bracket Strategies")
     summary_payload = _read_json(OUTPUTS / "bracket_summary.json")
 
@@ -351,7 +442,7 @@ with tab7:
                 st.caption("FF appearances: " + ", ".join(parts))
         st.divider()
 
-    strategy_names = ["standard", "favorites", "upsets", "analytics", "cinderella", "defensive", "momentum", "experience"]
+    strategy_names = ["standard", "favorites", "upsets", "analytics", "cinderella", "defensive", "momentum"]
     strategy = st.selectbox("Explore Strategy", strategy_names)
     bracket_payload = _read_json(OUTPUTS / "brackets" / f"bracket_{strategy}.json")
     if bracket_payload is None:
@@ -415,7 +506,7 @@ with tab7:
                                 f"({g['win_probability']*100:.0f}%)"
                             )
 
-with tab8:
+with tab9:
     st.subheader("Pick Sheet")
     pick_path = OUTPUTS / "my_bracket_picks.txt"
     if not pick_path.exists():

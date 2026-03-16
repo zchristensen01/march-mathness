@@ -2,7 +2,9 @@
   "models": {
     "default": {
       "AdjEM": 0.29,
-      "CompRank_inv": 0.12,
+      "CompRank_inv": 0.07,
+      "NET_Rank_inv": 0.03,
+      "Massey_Rank_inv": 0.02,
       "SOS_inv": 0.06,
       "eFG%": 0.07,
       "Opp_eFG%_inv": 0.05,
@@ -67,19 +69,22 @@
     "cinderella_tournament": {
       "SeedMismatch_norm": 0.25,
       "AdjD_inv": 0.18,
-      "Opp_TO%": 0.15,
+      "Opp_TO%": 0.12,
       "Barthag": 0.12,
       "Adj_T_inv": 0.08,
       "OR%": 0.06,
       "Coach_Tourney_Experience": 0.05,
       "Quad1_Wins": 0.05,
       "CloseGame": 0.04,
-      "WAB": 0.02
+      "WAB": 0.02,
+      "RankDivergence_inv": 0.03
     },
     "favorites": {
       "AdjEM": 0.4,
       "Barthag": 0.25,
-      "CompRank_inv": 0.2,
+      "CompRank_inv": 0.15,
+      "NET_Rank_inv": 0.03,
+      "Massey_Rank_inv": 0.02,
       "eFG%": 0.08,
       "AdjD_inv": 0.07
     },
@@ -89,15 +94,6 @@
       "AdjO": 0.15,
       "AdjD_inv": 0.15,
       "SOS_inv": 0.1
-    },
-    "experience": {
-      "TournamentReadiness": 0.25,
-      "AdjEM": 0.22,
-      "CloseGame": 0.18,
-      "Quad1_Wins": 0.13,
-      "Barthag": 0.10,
-      "Coach_Tourney_Experience": 0.08,
-      "WAB": 0.04
     }
   },
   "strategies": {
@@ -155,14 +151,6 @@
       },
       "upset_threshold": 0.38,
       "description": "Hot teams win in March - recency-weighted model"
-    },
-    "experience": {
-      "model_blends": {
-        "experience": 0.6,
-        "default": 0.4
-      },
-      "upset_threshold": 0.42,
-      "description": "Tournament readiness and proven performance under pressure"
     }
   }
 }

@@ -126,8 +126,29 @@ def normalize_all_teams(df: pd.DataFrame) -> list[dict[str, float]]:
     return [normalize_team(row) for _, row in df.iterrows()]
 
 
-def compute_derived_features(norm: dict[str, float]) -> dict[str, float]:
+def compute_rank_divergence(team: dict[str, Any], norm: dict[str, float]) -> float:
+    """Committee-vs-efficiency divergence normalized to [0, 1]."""
+    net_rank = pd.to_numeric(pd.Series([team.get("NET_Rank")]), errors="coerce").iloc[0]
+    torvik_rank = pd.to_numeric(pd.Series([team.get("Torvik_Rank")]), errors="coerce").iloc[0]
+    if pd.notna(net_rank) and pd.notna(torvik_rank):
+        raw_divergence = float(torvik_rank) - float(net_rank)
+        return float(np.clip((raw_divergence + 40.0) / 80.0, 0.0, 1.0))
+
+    # Fallback to normalized values when raw ranks are unavailable.
+    net_inv = norm.get("NET_Rank_inv", norm.get("NET_Rank"))
+    torvik_inv = norm.get("Torvik_Rank_inv", norm.get("Torvik_Rank"))
+    if net_inv is not None and torvik_inv is not None:
+        return float(np.clip(0.5 + 0.5 * (float(net_inv) - float(torvik_inv)), 0.0, 1.0))
+    return 0.5
+
+
+def compute_derived_features(
+    norm: dict[str, float],
+    team: dict[str, Any] | None = None
+) -> dict[str, float]:
     """Compute derived features from normalized primitives."""
+    team_row = team or {}
+    rank_divergence = compute_rank_divergence(team_row, norm)
     return {
         "CloseGame": (
             norm.get("Last_10_Games_Metric", 0.5)
@@ -167,7 +188,9 @@ def compute_derived_features(norm: dict[str, float]) -> dict[str, float]:
             + norm.get("Blk_%", 0.5) * 0.30
             + norm.get("Blked_%_inv", 0.5) * 0.15
         ),
-        "NETMomentum": norm.get("RankTrajectory", 0.5)
+        "NETMomentum": norm.get("RankTrajectory", 0.5),
+        "RankDivergence": rank_divergence,
+        "RankDivergence_inv": 1.0 - rank_divergence,
     }
 
 
