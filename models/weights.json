@@ -16,8 +16,9 @@
       "Last_10_Games_Metric": 0.05,
       "Quad1_Wins": 0.04,
       "Star_Player_Index": 0.03,
-      "Physicality": 0.02,
-      "BallMovement": 0.02
+      "Coach_Tourney_Experience": 0.02,
+      "Physicality": 0.01,
+      "BallMovement": 0.01
     },
     "defensive": {
       "AdjD_inv": 0.3,
@@ -64,14 +65,16 @@
       "InteriorDefense": 0.03
     },
     "cinderella_tournament": {
-      "SeedMismatch_norm": 0.28,
-      "AdjD_inv": 0.20,
-      "Opp_TO%": 0.17,
+      "SeedMismatch_norm": 0.25,
+      "AdjD_inv": 0.18,
+      "Opp_TO%": 0.15,
       "Barthag": 0.12,
       "Adj_T_inv": 0.08,
       "OR%": 0.06,
+      "Coach_Tourney_Experience": 0.05,
       "Quad1_Wins": 0.05,
-      "CloseGame": 0.04
+      "CloseGame": 0.04,
+      "WAB": 0.02
     },
     "favorites": {
       "AdjEM": 0.4,
@@ -88,11 +91,13 @@
       "SOS_inv": 0.1
     },
     "experience": {
-      "TournamentReadiness": 0.30,
-      "AdjEM": 0.25,
-      "CloseGame": 0.20,
-      "Quad1_Wins": 0.15,
-      "Barthag": 0.10
+      "TournamentReadiness": 0.25,
+      "AdjEM": 0.22,
+      "CloseGame": 0.18,
+      "Quad1_Wins": 0.13,
+      "Barthag": 0.10,
+      "Coach_Tourney_Experience": 0.08,
+      "WAB": 0.04
     }
   },
   "strategies": {

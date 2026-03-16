@@ -61,6 +61,26 @@
         <li>{{ team }}</li>
         {% endfor %}
       </ul>
+      {% if final_four_games %}
+      <h3 style="margin-top:14px; font-size:14px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b;">Semifinal Games</h3>
+      {% for game in final_four_games %}
+      <div class="game" style="max-width:500px;">
+        <div><strong>{{ game.higher_seed_seed }}</strong> {{ game.higher_seed_team }} vs <strong>{{ game.lower_seed_seed }}</strong> {{ game.lower_seed_team }}</div>
+        <div class="winner">Winner: {{ game.predicted_winner }}</div>
+        <div class="prob">Win probability: {{ (game.win_probability * 100)|round(1) }}%</div>
+      </div>
+      {% endfor %}
+      {% endif %}
+      {% if championship_game %}
+      <h3 style="margin-top:14px; font-size:14px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b;">Championship</h3>
+      {% for game in championship_game %}
+      <div class="game" style="max-width:500px; border-color:#1a7f37;">
+        <div><strong>{{ game.higher_seed_seed }}</strong> {{ game.higher_seed_team }} vs <strong>{{ game.lower_seed_seed }}</strong> {{ game.lower_seed_team }}</div>
+        <div class="winner">🏆 Champion: {{ game.predicted_winner }}</div>
+        <div class="prob">Win probability: {{ (game.win_probability * 100)|round(1) }}%</div>
+      </div>
+      {% endfor %}
+      {% endif %}
     </section>
   </div>
 </body>

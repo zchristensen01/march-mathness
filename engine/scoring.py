@@ -97,10 +97,22 @@ RANKING_COLUMN_ORDER: list[str] = [
     "Luck",
     "CinderellaScore",
     "CinderellaAlertLevel",
+    "C_SeedMismatch",
+    "C_Defense",
+    "C_Turnover",
+    "C_Tempo",
+    "C_Rebounding",
     "SeedMismatch",
     "FraudScore",
     "FraudLevel",
     "FraudExplanation",
+    "F_SeedDeviation",
+    "F_Imbalance",
+    "F_FormCollapse",
+    "F_Luck",
+    "F_Variance",
+    "F_StarDependence",
+    "F_Conference",
     "Consistency_Score",
     "Volatility_Score",
     "CSI",
@@ -108,6 +120,12 @@ RANKING_COLUMN_ORDER: list[str] = [
     "Strengths",
     "OverrideActive"
 ]
+
+EXCLUDE_FROM_OUTPUT: set[str] = {
+    "Conf_Strength_Weight",
+    "Avg_Hgt",
+    "Eff_Hgt",
+}
 
 
 def load_weights(path: str = "models/weights.json") -> dict[str, dict[str, float]]:
@@ -186,7 +204,7 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
     """Compute 6-component Cinderella score for seeds >= 9."""
     seed = int(team.get("Seed", 16))
     if seed < 9:
-        return {"CinderellaScore": 0.0, "CinderellaAlertLevel": ""}
+        return {"CinderellaScore": 0.0, "CinderellaAlertLevel": "-"}
 
     comp_rank = int(team.get("CompRank") or team.get("Torvik_Rank") or 200)
     seed_mis = seed_mismatch(seed, comp_rank)
@@ -220,7 +238,7 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
     elif cinderella_score >= 0.40:
         alert = "WATCH"
     else:
-        alert = ""
+        alert = "NONE"
 
     return {
         "CinderellaScore": round(float(cinderella_score), 3),
@@ -237,7 +255,7 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
     """Compute 7-component Fraud score for seeds <= 6."""
     seed = int(team.get("Seed", 16))
     if seed > 6:
-        return {"FraudScore": 0.0, "FraudLevel": ""}
+        return {"FraudScore": 0.0, "FraudLevel": "-"}
 
     comp_rank = int(team.get("CompRank") or team.get("Torvik_Rank") or 50)
     implied = implied_seed(comp_rank)
@@ -248,8 +266,6 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
     adj_d = norm.get("AdjD_inv", norm.get("AdjD", 0.5))
     imbalance = max(0.0, adj_o - adj_d)
     imbalance_score = min(1.0, imbalance / 0.35)
-    if int(team.get("Torvik_Rank", 50)) > 40:
-        imbalance_score = max(imbalance_score, 0.70)
 
     wins = float(team.get("Wins", 20))
     games = max(float(team.get("Games", 30)), 1.0)
@@ -267,7 +283,9 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
 
     star = float(team.get("Star_Player_Index", 5.0))
     star_norm = normalize_value(star, 1, 10)
-    dependence_score = star_norm
+    adj_em = float(team.get("AdjEM", 0.0))
+    team_depth = normalize_value(adj_em, -20, 40)
+    dependence_score = float(np.clip(star_norm - team_depth * 0.7, 0.0, 1.0))
 
     conf = str(team.get("Conference", "Unknown"))
     conf_fraud = FRAUD_CONFERENCE_PENALTIES.get(conf, 0.15)
@@ -292,7 +310,7 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
     elif fraud_score >= 0.25:
         level = "LOW"
     else:
-        level = ""
+        level = "NONE"
 
     return {
         "FraudScore": round(float(fraud_score), 3),
@@ -420,7 +438,8 @@ def generate_ranking(
 
     work = work.sort_values(score_column, ascending=False).reset_index(drop=True)
     work["Rank"] = np.arange(1, len(work) + 1)
-    work["ModelScore"] = work[score_column]
+    if score_column != "ModelScore":
+        work["ModelScore"] = work[score_column]
 
     if min_seed is not None:
         work = work[pd.to_numeric(work["Seed"], errors="coerce") >= min_seed]
@@ -428,8 +447,25 @@ def generate_ranking(
         work = work[pd.to_numeric(work["Seed"], errors="coerce") <= max_seed]
     work = work.reset_index(drop=True)
 
+    numeric_fill_cols = [
+        "C_SeedMismatch", "C_Defense", "C_Turnover", "C_Tempo", "C_Rebounding",
+        "F_SeedDeviation", "F_Imbalance", "F_FormCollapse", "F_Luck",
+        "F_Variance", "F_StarDependence", "F_Conference",
+        "CinderellaScore", "FraudScore",
+    ]
+    for col in numeric_fill_cols:
+        if col in work.columns:
+            work[col] = work[col].fillna(0.0)
+
+    string_fill_cols = ["CinderellaAlertLevel", "FraudLevel"]
+    for col in string_fill_cols:
+        if col in work.columns:
+            work[col] = work[col].fillna("-")
+    if "FraudExplanation" in work.columns:
+        work["FraudExplanation"] = work["FraudExplanation"].fillna("")
+
     cols = [c for c in RANKING_COLUMN_ORDER if c in work.columns]
-    extra_cols = [c for c in work.columns if c not in cols]
+    extra_cols = [c for c in work.columns if c not in cols and c not in EXCLUDE_FROM_OUTPUT]
     return work[cols + extra_cols]
 
 

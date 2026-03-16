@@ -148,7 +148,10 @@ def generate_bracket(
         "strategy": strategy_name,
         "description": strategy.get("description", ""),
         "champion": _team_name(champion),
-        "final_four": [_team_name(team) for team in ff_winners],
+        "runner_up": (championship_game[0]["lower_seed_team"]
+                      if _team_name(champion) == championship_game[0]["higher_seed_team"]
+                      else championship_game[0]["higher_seed_team"]),
+        "final_four": [_team_name(team) for team in region_winners],
         "rounds": rounds,
         "final_four_games": ff_games,
         "championship_game": championship_game

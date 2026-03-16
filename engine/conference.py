@@ -43,13 +43,14 @@ def nonconf_calibration(conf_teams: list[dict[str, Any]], _all_adjems: dict[str,
     for team in conf_teams:
         rank = float(team.get("CompRank") or team.get("Torvik_Rank") or 180)
         expected_q1 = max(0.0, (350.0 - rank) / 350.0 * 12.0)
-        actual_q1 = float(team.get("Quad1_Wins", 3))
+        actual_q1 = float(team.get("Quad1_Wins", 0))
         total_actual += actual_q1
         total_expected += expected_q1
         count += 1
     if count == 0 or total_expected == 0:
         return 0.0
-    return float((total_actual - total_expected) / total_expected)
+    raw = float((total_actual - total_expected) / total_expected)
+    return max(raw, -0.5)
 
 
 def compute_csi(conf_teams: list[dict[str, Any]]) -> dict[str, float]:
@@ -108,11 +109,5 @@ def apply_csi_to_teams(df: pd.DataFrame, conf_ratings: pd.DataFrame) -> pd.DataF
     out["CSI"] = out["Conference"].map(lookup["CSI"]).fillna(0.0)
     out["CSI_multiplier"] = out["Conference"].map(lookup["CSI_multiplier"]).fillna(1.0)
 
-    if "Conf_Strength_Weight" in out.columns:
-        manual = pd.to_numeric(out["Conf_Strength_Weight"], errors="coerce")
-        use_manual = manual.notna()
-        out.loc[use_manual, "CSI_multiplier"] = np.minimum(
-            out.loc[use_manual, "CSI_multiplier"], manual[use_manual]
-        ).clip(lower=0.75, upper=1.05)
     return out
 

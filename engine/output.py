@@ -74,7 +74,9 @@ def write_bracket_html(
         description=bracket.get("description", ""),
         champion=bracket.get("champion", ""),
         final_four=bracket.get("final_four", []),
-        regions=bracket.get("rounds", {})
+        regions=bracket.get("rounds", {}),
+        final_four_games=bracket.get("final_four_games", []),
+        championship_game=bracket.get("championship_game", [])
     )
     target_dir = Path(output_dir) / "brackets"
     _ensure_dir(target_dir)
@@ -151,60 +153,106 @@ def _count_upset_picks(
     return upset_count
 
 
+def _build_verdict_entry(
+    higher_seed: dict[str, Any],
+    lower_seed: dict[str, Any],
+    win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float],
+    brackets: dict[str, dict[str, Any]] | None,
+    region: str = "",
+    round_name: str = ""
+) -> dict[str, Any]:
+    """Build a single matchup verdict dict."""
+    p_higher = float(win_prob_fn(higher_seed, lower_seed))
+    c_score = float(lower_seed.get("CinderellaScore") or 0.0)
+    h_name = str(higher_seed.get("Team"))
+    l_name = str(lower_seed.get("Team"))
+    upset_picks = _count_upset_picks(h_name, l_name, brackets) if brackets else 0
+    verdict = classify_matchup_verdict(higher_seed, lower_seed, p_higher, c_score, upset_picks)
+    seed_a = int(higher_seed.get("Seed", 16))
+    seed_b = int(lower_seed.get("Seed", 16))
+    matchup_key = (min(seed_a, seed_b), max(seed_a, seed_b))
+    return {
+        "region": region,
+        "round": round_name,
+        "team_a": {
+            "name": h_name,
+            "seed": seed_a,
+            "power_score": float(higher_seed.get("PowerScore") or 0.0),
+            "adjEM": float(higher_seed.get("AdjEM") or 0.0),
+            "fraud_score": float(higher_seed.get("FraudScore") or 0.0),
+            "fraud_level": str(higher_seed.get("FraudLevel") or ""),
+        },
+        "team_b": {
+            "name": l_name,
+            "seed": seed_b,
+            "power_score": float(lower_seed.get("PowerScore") or 0.0),
+            "adjEM": float(lower_seed.get("AdjEM") or 0.0),
+            "cinderella_score": c_score,
+            "cinderella_level": str(lower_seed.get("CinderellaAlertLevel") or ""),
+        },
+        "win_prob_a": p_higher,
+        "predicted_spread": predicted_spread(higher_seed, lower_seed),
+        "historical_upset_rate": HISTORICAL_UPSET_RATES.get(matchup_key, 0.30),
+        "models_agreeing": len(brackets) - upset_picks if brackets else 0,
+        "models_picking_upset": upset_picks,
+        "verdict": verdict["verdict"],
+        "verdict_icon": verdict["icon"],
+        "verdict_color": verdict["color"],
+        "pick": verdict["pick"],
+        "pick_strength": verdict["pick_strength"],
+        "volatility_flag": bool(float(lower_seed.get("Volatility_Score") or 0.0) > 0.65),
+    }
+
+
 def write_matchup_verdicts_json(
     teams: list[dict[str, Any]],
     win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float],
     output_dir: str,
-    brackets: dict[str, dict[str, Any]] | None = None
+    brackets: dict[str, dict[str, Any]] | None = None,
+    bracket_input: dict[str, Any] | None = None
 ) -> Path:
-    """Precompute matchup verdicts for UI rendering."""
+    """Precompute matchup verdicts for actual bracket matchups."""
+    from engine import FIRST_ROUND_MATCHUPS
+
+    team_lookup = {str(t.get("Team")): t for t in teams}
     matchups: list[dict[str, Any]] = []
-    for i, team_a in enumerate(teams):
-        for j, team_b in enumerate(teams):
-            if i >= j:
-                continue
-            seed_a = int(team_a.get("Seed", 16))
-            seed_b = int(team_b.get("Seed", 16))
-            higher_seed = team_a if seed_a <= seed_b else team_b
-            lower_seed = team_b if higher_seed is team_a else team_a
-            p_higher = float(win_prob_fn(higher_seed, lower_seed))
-            c_score = float(lower_seed.get("CinderellaScore") or 0.0)
-            h_name = str(higher_seed.get("Team"))
-            l_name = str(lower_seed.get("Team"))
-            upset_picks = _count_upset_picks(h_name, l_name, brackets) if brackets else 0
-            verdict = classify_matchup_verdict(higher_seed, lower_seed, p_higher, c_score, upset_picks)
-            matchup_key = (int(min(seed_a, seed_b)), int(max(seed_a, seed_b)))
-            matchups.append(
-                {
-                    "team_a": {
-                        "name": h_name,
-                        "seed": int(higher_seed.get("Seed", 16)),
-                        "power_score": float(higher_seed.get("PowerScore") or 0.0),
-                        "adjEM": float(higher_seed.get("AdjEM") or 0.0),
-                        "fraud_score": float(higher_seed.get("FraudScore") or 0.0),
-                        "fraud_level": str(higher_seed.get("FraudLevel") or ""),
-                    },
-                    "team_b": {
-                        "name": l_name,
-                        "seed": int(lower_seed.get("Seed", 16)),
-                        "power_score": float(lower_seed.get("PowerScore") or 0.0),
-                        "adjEM": float(lower_seed.get("AdjEM") or 0.0),
-                        "cinderella_score": c_score,
-                        "cinderella_level": str(lower_seed.get("CinderellaAlertLevel") or ""),
-                    },
-                    "win_prob_a": p_higher,
-                    "predicted_spread": predicted_spread(higher_seed, lower_seed),
-                    "historical_upset_rate": HISTORICAL_UPSET_RATES.get(matchup_key, 0.30),
-                    "models_agreeing": len(brackets) - upset_picks if brackets else 0,
-                    "models_picking_upset": upset_picks,
-                    "verdict": verdict["verdict"],
-                    "verdict_icon": verdict["icon"],
-                    "verdict_color": verdict["color"],
-                    "pick": verdict["pick"],
-                    "pick_strength": verdict["pick_strength"],
-                    "volatility_flag": bool(float(lower_seed.get("Volatility_Score") or 0.0) > 0.65)
-                }
-            )
+
+    if bracket_input:
+        teams_by_region: dict[str, list[dict[str, Any]]] = {}
+        for entry in bracket_input.get("teams", []):
+            region = str(entry.get("region", ""))
+            name = str(entry.get("team", ""))
+            enriched = dict(team_lookup.get(name, {}))
+            enriched["Team"] = name
+            enriched["Seed"] = int(entry.get("seed", 16))
+            enriched["slot"] = int(entry.get("slot", 99))
+            teams_by_region.setdefault(region, []).append(enriched)
+
+        for region, region_teams in teams_by_region.items():
+            sorted_teams = sorted(region_teams, key=lambda t: int(t.get("slot", 99)))
+            for slot_a, slot_b in FIRST_ROUND_MATCHUPS:
+                if slot_a >= len(sorted_teams) or slot_b >= len(sorted_teams):
+                    continue
+                ta, tb = sorted_teams[slot_a], sorted_teams[slot_b]
+                seed_a = int(ta.get("Seed", 16))
+                seed_b = int(tb.get("Seed", 16))
+                higher = ta if seed_a <= seed_b else tb
+                lower = tb if seed_a <= seed_b else ta
+                matchups.append(
+                    _build_verdict_entry(higher, lower, win_prob_fn, brackets, region, "R64")
+                )
+    else:
+        for i, team_a in enumerate(teams):
+            for j, team_b in enumerate(teams):
+                if i >= j:
+                    continue
+                seed_a = int(team_a.get("Seed", 16))
+                seed_b = int(team_b.get("Seed", 16))
+                higher = team_a if seed_a <= seed_b else team_b
+                lower = team_b if higher is team_a else team_a
+                matchups.append(
+                    _build_verdict_entry(higher, lower, win_prob_fn, brackets)
+                )
 
     payload = {"matchups": matchups}
     path = Path(output_dir) / "bracket_matchup_verdicts.json"
@@ -253,13 +301,21 @@ def write_bracket_pick_sheet(
             f"#{int(row.get('Rank', 0)): <3} {row.get('Team', ''):<24} "
             f"Seed:{int(row.get('Seed', 0)):<2} Score:{float(row.get('PowerScore', 0)):.1f}"
         )
-    lines.extend(["", "MATCHUP VERDICTS", "-" * 67])
-    for matchup in verdicts.get("matchups", [])[:40]:
-        lines.append(
-            f"{matchup['verdict_icon']} {matchup['team_a']['name']} ({matchup['team_a']['seed']}) "
-            f"vs {matchup['team_b']['name']} ({matchup['team_b']['seed']}) "
-            f"-> {matchup['pick']} [{matchup['verdict']}] ({matchup['win_prob_a']*100:.1f}%)"
-        )
+    lines.extend(["", "ROUND OF 64 — MATCHUP VERDICTS", "-" * 67])
+    by_region: dict[str, list[dict[str, Any]]] = {}
+    for matchup in verdicts.get("matchups", []):
+        region = matchup.get("region", "")
+        by_region.setdefault(region, []).append(matchup)
+    for region, region_matchups in by_region.items():
+        if region:
+            lines.append(f"\n  {region.upper()}")
+        for matchup in region_matchups:
+            pick_prob = matchup['win_prob_a'] if matchup['pick'] == matchup['team_a']['name'] else 1.0 - matchup['win_prob_a']
+            lines.append(
+                f"  {matchup['verdict_icon']} ({matchup['team_a']['seed']}) {matchup['team_a']['name']:<20} "
+                f"vs ({matchup['team_b']['seed']}) {matchup['team_b']['name']:<20} "
+                f"-> {matchup['pick']} [{matchup['verdict']}] {pick_prob*100:.0f}%"
+            )
     lines.extend(["", "CHAMPIONSHIP PROBABILITIES", "-" * 67])
     sorted_sim = sorted(
         simulation.items(),
@@ -283,7 +339,8 @@ def write_all_outputs(
     config: dict[str, Any],
     conf_ratings: pd.DataFrame | None = None,
     all_teams_for_verdicts: list[dict[str, Any]] | None = None,
-    win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float] | None = None
+    win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float] | None = None,
+    bracket_input: dict[str, Any] | None = None
 ) -> dict[str, list[str]]:
     """Write all output artifacts and return written path summary."""
     output_dir = config.get("output_dir", "./outputs")
@@ -309,7 +366,8 @@ def write_all_outputs(
 
     if all_teams_for_verdicts is not None and win_prob_fn is not None:
         verdict_path = write_matchup_verdicts_json(
-            all_teams_for_verdicts, win_prob_fn, output_dir, brackets=brackets or None
+            all_teams_for_verdicts, win_prob_fn, output_dir,
+            brackets=brackets or None, bracket_input=bracket_input
         )
         written["other"].append(str(verdict_path))
         verdict_payload = json.loads(Path(verdict_path).read_text(encoding="utf-8"))

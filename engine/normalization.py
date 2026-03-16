@@ -47,7 +47,9 @@ FEATURE_RANGES: dict[str, tuple[float, float, str]] = {
     "PPP_Def": (0.80, 1.22, "inverse"),
     "Adj_T": (60, 80, "neutral"),
     "RankTrajectory": (-30, 30, "higher"),
-    "WinPct": (0, 1, "higher")
+    "WinPct": (0, 1, "higher"),
+    "Coach_Tourney_Experience": (1, 10, "higher"),
+    "WAB": (-13, 14, "higher")
 }
 
 
@@ -138,15 +140,13 @@ def compute_derived_features(norm: dict[str, float]) -> dict[str, float]:
             norm.get("3P%", 0.5) * 0.65 + norm.get("3P_%_D_inv", 0.5) * 0.35
         ),
         "BallMovement": (
-            norm.get("AST_TO", 0.5) * 0.50
-            + norm.get("Ast_%", 0.5) * 0.30
-            + norm.get("Op_Ast_%_inv", 0.5) * 0.20
+            norm.get("Ast_%", 0.5) * 0.60
+            + norm.get("Op_Ast_%_inv", 0.5) * 0.40
         ),
         "Physicality": (
-            norm.get("OR%", 0.5) * 0.30
-            + norm.get("Blk_%", 0.5) * 0.25
-            + norm.get("FTR", 0.5) * 0.25
-            + norm.get("Eff_Hgt", 0.5) * 0.20
+            norm.get("OR%", 0.5) * 0.35
+            + norm.get("Blk_%", 0.5) * 0.30
+            + norm.get("FTR", 0.5) * 0.35
         ),
         "InsideScoring": (
             norm.get("2P%", 0.5) * 0.50
@@ -167,7 +167,7 @@ def compute_derived_features(norm: dict[str, float]) -> dict[str, float]:
             + norm.get("Blk_%", 0.5) * 0.30
             + norm.get("Blked_%_inv", 0.5) * 0.15
         ),
-        "NETMomentum": normalize_value(norm.get("RankTrajectory", 0.0), -30, 30)
+        "NETMomentum": norm.get("RankTrajectory", 0.5)
     }
 
 

@@ -448,7 +448,7 @@ def merge_all_sources(
         "Seed", "NET_Rank", "Quad1_Wins", "Last_10_Games_Metric",
         "Conf_Tourney_Champion", "Won_Play_In",
         "Star_Player_Index",
-        "Elite_SOS", "Conf_Strength_Weight",
+        "Elite_SOS",
     ]
     for col in PLACEHOLDER_COLUMNS:
         if col not in df.columns:

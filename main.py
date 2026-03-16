@@ -275,7 +275,8 @@ def main() -> None:
         config,
         conf_ratings=conf_ratings,
         all_teams_for_verdicts=df.to_dict("records"),
-        win_prob_fn=win_prob_fn
+        win_prob_fn=win_prob_fn,
+        bracket_input=bracket
     )
 
     print(f"\n✅ Complete in {time.time() - t0:.1f}s")
