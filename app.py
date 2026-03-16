@@ -339,11 +339,19 @@ with tab6:
             row_b = power_df[power_df["Team"] == team_b_name].iloc[0].to_dict()
             p_a = production_win_probability(row_a, row_b)
             spread = predicted_spread(row_a, row_b)
-            tier = confidence_tier(p_a)
-            m1, m2, m3 = st.columns(3)
+
+            if p_a >= 0.5:
+                fav_name, dog_name, fav_prob = team_a_name, team_b_name, p_a
+            else:
+                fav_name, dog_name, fav_prob = team_b_name, team_a_name, 1.0 - p_a
+            tier = confidence_tier(fav_prob)
+            spread_abs = abs(spread)
+
+            m1, m2, m3, m4 = st.columns(4)
             m1.metric(f"P({team_a_name} wins)", f"{p_a*100:.1f}%")
-            m2.metric("Predicted spread", f"{team_a_name} {spread:+.1f}")
-            m3.metric("Confidence", tier)
+            m2.metric(f"P({team_b_name} wins)", f"{(1.0 - p_a)*100:.1f}%")
+            m3.metric("Predicted spread", f"{fav_name} by {spread_abs:.1f}")
+            m4.metric("Pick", f"{fav_name} — {tier}")
 
 with tab7:
     st.subheader("Monte Carlo Simulation")
