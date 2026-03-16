@@ -484,7 +484,6 @@ def merge_all_sources(
 def main() -> None:
     parser = argparse.ArgumentParser(description="March Mathness data fetcher")
     parser.add_argument("--year", type=int, default=2026)
-    parser.add_argument("--tournament-only", action="store_true")
     args = parser.parse_args()
 
     print(f"\nFetching data for {args.year}...")
@@ -533,11 +532,24 @@ def main() -> None:
     data_dir = Path("data")
     data_dir.mkdir(parents=True, exist_ok=True)
     out_main = data_dir / "teams_input.csv"
-    merged.to_csv(out_main, index=False)
 
-    if args.tournament_only:
-        tournament_df = merged[merged["Seed"].notna()].copy()
-        tournament_df.to_csv(data_dir / "tournament_teams_input.csv", index=False)
+    bracket_path = data_dir / "bracket_input.json"
+    if bracket_path.exists():
+        with bracket_path.open("r", encoding="utf-8") as f:
+            bracket = json.load(f)
+        bracket_teams: set[str] = set()
+        for entry in bracket.get("teams", []):
+            bracket_teams.add(entry["team"])
+            if "play_in_opponent" in entry:
+                bracket_teams.add(entry["play_in_opponent"])
+        before = len(merged)
+        merged = merged[merged["Team"].isin(bracket_teams)].copy().reset_index(drop=True)
+        print(f"\n  Filtered to {len(merged)} bracket teams (from {before} total)")
+        missing_teams = bracket_teams - set(merged["Team"])
+        if missing_teams:
+            print(f"  ⚠ Bracket teams not found in Torvik data: {sorted(missing_teams)}")
+
+    merged.to_csv(out_main, index=False)
 
     print(f"\n{'=' * 60}")
     print(f"✓ Saved {len(merged)} teams to {out_main}")
