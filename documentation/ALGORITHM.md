@@ -39,11 +39,9 @@ This section is the master reference for every metric computed by the system. Cu
 | Blk_%, Blked_% | 3 | Physicality, InteriorDefense derived | Torvik |
 | PPP_Off, PPP_Def | 3 | Offensive, Defensive models | Torvik |
 | Avg_Hgt, Eff_Hgt | 3 | Physicality, height score | Torvik |
-| Exp | 4 | Default, Experience model, Cinderella | Torvik |
 | Quad1_Wins | 4 | Default, Tournament Readiness | Manual |
 | Last_10_Games_Metric | 4 | Momentum model, Fraud Score (form collapse) | Manual |
 | Star_Player_Index | 4 | Default, Fraud Score (star dependence) | Auto (Torvik player BPM) |
-| Bench_Minutes_Pct | 4 | Default, Fraud Score (star dependence) | Auto (Torvik player minutes) |
 | Coach_Tourney_Experience | 4 | Experience model (0.08), Cinderella (0.05) | Manual/coach_scores.json |
 | Program_Prestige | 4 | Display context, optional enrichment | Auto-lookup table |
 | TRank_Early | 4 | NETMomentum derived (ranking trajectory) | Auto (Torvik Time Machine) |
@@ -126,10 +124,8 @@ def normalize_inverse(v, min_val, max_val):
 | Massey_Rank | 1 | 365 | inverse | |
 | NET_Rank | 1 | 365 | inverse | |
 | CompRank | 1 | 365 | inverse | Average of available ranks |
-| Exp | 0 | 3 | higher | |
 | Last_10_Games_Metric | 0.30 | 1.00 | higher | Win rate last 10 |
 | Star_Player_Index | 1 | 10 | higher | |
-| Bench_Minutes_Pct | 20 | 55 | higher | |
 | Quad1_Wins | 0 | 15 | higher | |
 | Elite_SOS | 0 | 50 | higher | |
 | PPP_Off | 0.88 | 1.30 | higher | |
@@ -170,8 +166,8 @@ def compute_derived_features(norm):
                             norm["DR%"] * 0.20),
         
         # Tournament readiness (efficiency under pressure proxy)
-        "TournamentReadiness": (norm["Barthag"] * 0.50 + norm["Exp"] * 0.30 + 
-                                 norm["Quad1_Wins"] * 0.20),
+        "TournamentReadiness": (norm["Barthag"] * 0.60 + 
+                                 norm["Quad1_Wins"] * 0.40),
         
         # Defensive playmaking
         "DefensivePlaymaking": (norm["Opp_TO%"] * 0.55 + norm["Blk_%"] * 0.30 + 
@@ -339,10 +335,8 @@ DEFAULT_WEIGHTS = {
     "FT%":            0.02,
     "Barthag":        0.04,
     "Last_10_Games_Metric": 0.04,
-    "Exp":            0.03,
     "Quad1_Wins":     0.04,
-    "Star_Player_Index": 0.02,
-    "Bench_Minutes_Pct": 0.02,
+    "Star_Player_Index": 0.03,
     "Physicality":    0.02,  # derived
     "BallMovement":   0.02,  # derived
 }
@@ -414,7 +408,6 @@ GIANT_KILLER_WEIGHTS = {
     "FT%":                 0.08,
     "Barthag":             0.07,
     "Quad1_Wins":          0.06,
-    "Exp":                 0.04,
     "InteriorDefense":     0.03,  # derived
 }
 # Sum = 1.00
@@ -430,8 +423,7 @@ CINDERELLA_TOURNAMENT_WEIGHTS = {
     "AdjD_inv":            0.18,
     "Opp_TO%":             0.15,
     "Barthag":             0.12,
-    "Exp":                 0.08,
-    "Adj_T_inv":           0.07,  # lower season-long tempo = more dangerous underdog (Toohey 2025; pace control keeps games close)
+    "Adj_T_inv":           0.08,  # lower season-long tempo = more dangerous underdog (Toohey 2025; pace control keeps games close)
     "OR%":                 0.06,
     "Quad1_Wins":          0.05,
     "CloseGame":           0.04,  # derived
@@ -471,9 +463,8 @@ ANALYTICS_WEIGHTS = {
 
 ```python
 EXPERIENCE_WEIGHTS = {
-    "Exp":                  0.25,
-    "TournamentReadiness":  0.20,  # derived
-    "AdjEM":                0.20,
+    "TournamentReadiness":  0.30,  # derived
+    "AdjEM":                0.25,
     "CloseGame":            0.15,  # derived
     "Quad1_Wins":           0.10,
     "Barthag":              0.10,
@@ -735,11 +726,7 @@ def compute_cinderella_score(team: dict, norm: dict) -> dict:
     tov_margin_score = (norm.get("Opp_TO%", 0.5) * 0.6 + 
                         norm.get("TO%_inv", 0.5) * 0.4)
     
-    # Component 4: Experience (10% weight)
-    # Research: Pifer et al. 2019 — tournament experience predicts advancement
-    exp_score = norm.get("Exp", 0.5)
-    
-    # Component 5: Tempo (8% weight)
+    # Component 4: Tempo (8% weight)
     # Research: Toohey (2025) — Cinderella archetypes that succeed have
     # lower season-long adjusted tempo. Controlling pace reduces variance
     # and keeps games close (Skinner 2011 mathematical proof). The older
@@ -748,16 +735,15 @@ def compute_cinderella_score(team: dict, norm: dict) -> dict:
     tempo = team.get('Adj_T', 68.0)
     tempo_score = normalize_inverse(tempo, 60, 80)
     
-    # Component 6: Offensive Rebounding (7% weight)
+    # Component 5: Offensive Rebounding (7% weight)
     # Research: second-chance points compensate for talent gap
     reb_score = norm.get("OR%", 0.5)
     
     # Weighted sum
     cinderella_score = (
-        0.30 * seed_mis +
-        0.25 * defense_signal +
-        0.20 * tov_margin_score +
-        0.10 * exp_score +
+        0.35 * seed_mis +
+        0.28 * defense_signal +
+        0.22 * tov_margin_score +
         0.08 * tempo_score +
         0.07 * reb_score
     )
@@ -776,7 +762,6 @@ def compute_cinderella_score(team: dict, norm: dict) -> dict:
         "C_SeedMismatch": round(seed_mis, 3),
         "C_Defense": round(defense_signal, 3),
         "C_Turnover": round(tov_margin_score, 3),
-        "C_Experience": round(exp_score, 3),
         "C_Tempo": round(tempo_score, 3),
         "C_Rebounding": round(reb_score, 3),
     }
@@ -976,7 +961,7 @@ STRATEGY_CONFIGS = {
     "experience": {
         "model_blends": {"experience": 0.60, "default": 0.40},
         "upset_threshold": 0.42,
-        "description": "Experience and tournament history matter"
+        "description": "Tournament readiness and proven performance under pressure"
     },
 }
 ```
@@ -1078,7 +1063,6 @@ def get_team_strengths(team: dict) -> list[str]:
     
     # Momentum / experience
     if team.get('Last_10_Games_Metric', 0) >= 0.85:  strengths.append("red-hot form")
-    if team.get('Exp', 0) >= 2.3:                    strengths.append("veteran squad")
     if team.get('Quad1_Wins', 0) >= 8:               strengths.append("battle-tested (Q1 wins)")
     
     # Physical
@@ -1302,12 +1286,8 @@ def compute_fraud_score(team: dict, norm: dict) -> dict:
     # win probability) AND Star_Player_Index (changing this fraud
     # component). These are complementary effects, not redundant.
     star = team.get('Star_Player_Index', 5.0)
-    bench = team.get('Bench_Minutes_Pct', 30.0)
-
     star_norm = normalize_value(star, 1, 10)
-    bench_norm = normalize_value(bench, 20, 55)
-    dependence_score = max(0, star_norm - bench_norm * 0.7)
-    dependence_score = min(1.0, dependence_score)
+    dependence_score = star_norm
 
     # ── Component 7: Conference Tournament Performance Bias (5%) ──────
     # Based on 2021–2025 tournament performance data:

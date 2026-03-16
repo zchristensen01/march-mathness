@@ -91,7 +91,6 @@ RANKING_COLUMN_ORDER: list[str] = [
     "NET_Rank",
     "CompRank",
     "AP_Poll_Rank",
-    "Exp",
     "Coach_Tourney_Experience",
     "Program_Prestige",
     "Last_10_Games_Metric",
@@ -205,15 +204,13 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
         defense_signal = 0.65
 
     tov_margin_score = norm.get("Opp_TO%", 0.5) * 0.6 + norm.get("TO%_inv", 0.5) * 0.4
-    exp_score = norm.get("Exp", 0.5)
     tempo_score = normalize_inverse(float(team.get("Adj_T", 68.0)), 60, 80)
     reb_score = norm.get("OR%", 0.5)
 
     cinderella_score = (
-        0.30 * seed_mis
-        + 0.25 * defense_signal
-        + 0.20 * tov_margin_score
-        + 0.10 * exp_score
+        0.35 * seed_mis
+        + 0.28 * defense_signal
+        + 0.22 * tov_margin_score
         + 0.08 * tempo_score
         + 0.07 * reb_score
     )
@@ -231,7 +228,6 @@ def compute_cinderella_score(team: dict[str, Any], norm: dict[str, float]) -> di
         "C_SeedMismatch": round(float(seed_mis), 3),
         "C_Defense": round(float(defense_signal), 3),
         "C_Turnover": round(float(tov_margin_score), 3),
-        "C_Experience": round(float(exp_score), 3),
         "C_Tempo": round(float(tempo_score), 3),
         "C_Rebounding": round(float(reb_score), 3)
     }
@@ -270,10 +266,8 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
     variance_score = 0.6 * three_pt_rate + 0.4 * (1.0 - consistency)
 
     star = float(team.get("Star_Player_Index", 5.0))
-    bench = float(team.get("Bench_Minutes_Pct", 30.0))
     star_norm = normalize_value(star, 1, 10)
-    bench_norm = normalize_value(bench, 20, 55)
-    dependence_score = min(1.0, max(0.0, star_norm - bench_norm * 0.7))
+    dependence_score = star_norm
 
     conf = str(team.get("Conference", "Unknown"))
     conf_fraud = FRAUD_CONFERENCE_PENALTIES.get(conf, 0.15)
@@ -366,8 +360,6 @@ def get_team_strengths(team: dict[str, Any]) -> list[str]:
         strengths.append("shot-blocking presence")
     if float(team.get("Last_10_Games_Metric", 0)) >= 0.85:
         strengths.append("red-hot form")
-    if float(team.get("Exp", 0)) >= 2.3:
-        strengths.append("veteran squad")
     if float(team.get("Quad1_Wins", 0)) >= 8:
         strengths.append("battle-tested (Q1 wins)")
     if float(team.get("Eff_Hgt", 0)) >= 82:

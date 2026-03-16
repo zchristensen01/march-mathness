@@ -37,7 +37,6 @@ def test_generate_all_rankings_smoke() -> None:
                 "NET_Rank": 4,
                 "CompRank": 5,
                 "AP_Poll_Rank": 2,
-                "Exp": 2.0,
                 "Coach_Tourney_Experience": 8,
                 "Program_Prestige": 9,
                 "Last_10_Games_Metric": 0.8,
@@ -72,7 +71,6 @@ def test_generate_all_rankings_smoke() -> None:
                 "NET_Rank": 70,
                 "CompRank": 68,
                 "AP_Poll_Rank": 26,
-                "Exp": 2.2,
                 "Coach_Tourney_Experience": 4,
                 "Program_Prestige": 2,
                 "Last_10_Games_Metric": 0.75,
@@ -86,8 +84,8 @@ def test_generate_all_rankings_smoke() -> None:
         ]
     )
     norms = [
-        {"AdjEM": 0.9, "CompRank_inv": 0.95, "SOS_inv": 0.9, "eFG%": 0.8, "Opp_eFG%_inv": 0.85, "Opp_TO%": 0.7, "TO%_inv": 0.7, "OR%": 0.7, "DR%": 0.65, "FTR": 0.6, "FT%": 0.6, "Barthag": 0.9, "Last_10_Games_Metric": 0.75, "Exp": 0.66, "Quad1_Wins": 0.8, "Star_Player_Index": 0.7, "Bench_Minutes_Pct": 0.6, "3P_Rate": 0.5},
-        {"AdjEM": 0.45, "CompRank_inv": 0.75, "SOS_inv": 0.65, "eFG%": 0.55, "Opp_eFG%_inv": 0.6, "Opp_TO%": 0.65, "TO%_inv": 0.6, "OR%": 0.55, "DR%": 0.5, "FTR": 0.55, "FT%": 0.56, "Barthag": 0.72, "Last_10_Games_Metric": 0.65, "Exp": 0.73, "Quad1_Wins": 0.4, "Star_Player_Index": 0.5, "Bench_Minutes_Pct": 0.45, "3P_Rate": 0.6}
+        {"AdjEM": 0.9, "CompRank_inv": 0.95, "SOS_inv": 0.9, "eFG%": 0.8, "Opp_eFG%_inv": 0.85, "Opp_TO%": 0.7, "TO%_inv": 0.7, "OR%": 0.7, "DR%": 0.65, "FTR": 0.6, "FT%": 0.6, "Barthag": 0.9, "Last_10_Games_Metric": 0.75, "Quad1_Wins": 0.8, "Star_Player_Index": 0.7, "3P_Rate": 0.5},
+        {"AdjEM": 0.45, "CompRank_inv": 0.75, "SOS_inv": 0.65, "eFG%": 0.55, "Opp_eFG%_inv": 0.6, "Opp_TO%": 0.65, "TO%_inv": 0.6, "OR%": 0.55, "DR%": 0.5, "FTR": 0.55, "FT%": 0.56, "Barthag": 0.72, "Last_10_Games_Metric": 0.65, "Quad1_Wins": 0.4, "Star_Player_Index": 0.5, "3P_Rate": 0.6}
     ]
     deriveds = [
         {"Physicality": 0.65, "BallMovement": 0.72, "CloseGame": 0.8, "TournamentReadiness": 0.85, "DefensivePlaymaking": 0.7, "InsideScoring": 0.76, "InteriorDefense": 0.74, "NETMomentum": 0.6},

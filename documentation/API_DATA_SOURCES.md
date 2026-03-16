@@ -71,14 +71,14 @@ def fetch_torvik_factors(year: int = 2026, game_type: str = "R") -> pd.DataFrame
     return pd.DataFrame(data)
 ```
 
-### 1.3 Player-Level Data (for Star_Player_Index and Bench_Minutes_Pct)
+### 1.3 Player-Level Data (for Star_Player_Index)
 
 **Also requires `cloudscraper` — same Cloudflare issue as team data.**
 
 ```python
 def fetch_torvik_players(year: int = 2026) -> pd.DataFrame:
     """
-    Player stats by team. Use to compute Star_Player_Index and Bench_Minutes_Pct.
+    Player stats by team. Use to compute Star_Player_Index.
     Plain requests.get() returns 403 — must use cloudscraper.
     
     Key columns returned: Team, Player, Min, BPM, OBPM, DBPM, Usage, ...
@@ -170,7 +170,6 @@ def fetch_torvik_early_snapshot(year: int, weeks_before: int = 4) -> pd.DataFram
 | `Raw Tempo` | `Raw_T` | |
 | `Avg Hgt` | `Avg_Hgt` | |
 | `Eff Hgt` | `Eff_Hgt` | |
-| `Experience` | `Exp` | |
 | `PPP Off` | `PPP_Off` | |
 | `PPP Def` | `PPP_Def` | |
 | `WAB` | `WAB` | Wins Above Bubble — already in Torvik CSV |
@@ -479,7 +478,7 @@ def fetch_torvik_main(year: int) -> pd.DataFrame:
         '3PRD': '3P_Rate_D', 'Blk%': 'Blk_%', 'Blk%D': 'Blked_%',
         'Tempo': 'Adj_T', 'Raw Tempo': 'Raw_T',
         'Avg Hgt': 'Avg_Hgt', 'Eff Hgt': 'Eff_Hgt',
-        'Experience': 'Exp', 'PPP Off': 'PPP_Off', 'PPP Def': 'PPP_Def',
+        'PPP Off': 'PPP_Off', 'PPP Def': 'PPP_Def',
         'Rank': 'Torvik_Rank', 'Conf': 'Conference', 'Rec': 'Record',
         'wAB': 'WAB',  # handle alternate column name
     })
@@ -543,7 +542,6 @@ def compute_player_metrics(year: int = 2026) -> pd.DataFrame | None:
     """
     Fetches Torvik player data and computes per-team aggregates:
     - Star_Player_Index: best player BPM normalized to 1-10 scale
-    - Bench_Minutes_Pct: fraction of minutes played by non-starters
     
     Automates two columns that were previously manual-only.
     """
@@ -572,15 +570,14 @@ def compute_player_metrics(year: int = 2026) -> pd.DataFrame | None:
             results.append({
                 'Team': team_name,
                 'Star_Player_Index': star_index,
-                'Bench_Minutes_Pct': bench_pct,
             })
 
         df = pd.DataFrame(results)
-        print(f"  ✓ Player metrics: {len(df)} teams (Star_Player_Index + Bench_Minutes_Pct)")
+        print(f"  ✓ Player metrics: {len(df)} teams (Star_Player_Index)")
         return df
     except Exception as e:
         print(f"  ⚠ Player data fetch failed: {e}")
-        print(f"    Star_Player_Index and Bench_Minutes_Pct will need manual entry.")
+        print(f"    Star_Player_Index will need manual entry (prompt 04).")
         return None
 
 
@@ -664,7 +661,7 @@ def merge_all_sources(torvik_df, massey_df,
     else:
         df['NET_Rank'] = np.nan
 
-    # Player-derived metrics merge (Star_Player_Index, Bench_Minutes_Pct)
+    # Player-derived metrics merge (Star_Player_Index)
     if player_metrics_df is not None:
         df = df.merge(player_metrics_df, on='Team', how='left')
 
@@ -790,7 +787,7 @@ After running `scripts/fetch_data.py`, some fields require manual collection. Mo
 
 Notes:
 - `NET_Rank` is auto-fetched from ESPN when available.
-- `Star_Player_Index` and `Bench_Minutes_Pct` are auto-computed from Torvik player data when available.
+- `Star_Player_Index` is auto-computed from Torvik player data when available.
 - If those upstream fetches fail, the pipeline uses defaults and you can optionally backfill manually.
 
 **⚠️ Team names in ALL files must match the canonical names in `data/teams_input.csv`.** See team name normalization in Section 8.
@@ -856,7 +853,7 @@ def validate_input(df: pd.DataFrame) -> list[str]:
 | Source | Cost | Provides | Auto-fetched? |
 |--------|------|---------|---------------|
 | BartTorvik (team) | **$0** | AdjEM, AdjO, AdjD, Barthag, all four factors, SOS, FT%, tempo, height, experience, PPP, WAB, Luck (computed) | ✅ Yes |
-| BartTorvik (player) | **$0** | Star_Player_Index, Bench_Minutes_Pct (auto-computed from BPM + minutes) | ✅ Yes |
+| BartTorvik (player) | **$0** | Star_Player_Index (auto-computed from BPM) | ✅ Yes |
 | BartTorvik (Time Machine) | **$0** | TRank_Early → RankTrajectory / NETMomentum | ✅ Yes |
 | Massey Ratings | **$0** | Consensus computer ranking | ✅ Yes |
 | ESPN AP Poll | **$0** | AP Poll rank | ✅ Yes |

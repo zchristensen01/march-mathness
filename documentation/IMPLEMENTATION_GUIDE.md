@@ -90,7 +90,7 @@ Full implementation is in `API_DATA_SOURCES.md` Section 9. Build this FIRST — 
 3. `fetch_ap_poll()` — ESPN AP Top 25 via plain requests (ESPN doesn't need cloudscraper)
 4. `fetch_torvik_early_snapshot(year)` — T-Rank snapshot from ~4 weeks before Selection Sunday for ranking trajectory
 5. `fetch_espn_net_rank()` — NET rankings via ESPN API (for CompRank)
-6. `compute_player_metrics(year)` — Torvik player data → Star_Player_Index + Bench_Minutes_Pct
+6. `compute_player_metrics(year)` — Torvik player data → Star_Player_Index
 7. `load_coach_scores()` — reads `data/coach_scores.json`
 8. `merge_all_sources()` — merges all DataFrames, computes Luck + CompRank, applies Program Prestige and Coach scores, computes RankTrajectory
 
@@ -104,7 +104,7 @@ python scripts/fetch_data.py --year 2026
 ```
 
 After `fetch_data.py` runs, you still need to manually fill: `Seed`, `Last_10_Games_Metric`, `Quad1_Wins`, `Conf_Tourney_Champion`, and later `Won_Play_In` (after First Four games).  
-`NET_Rank`, `Star_Player_Index`, and `Bench_Minutes_Pct` are auto-populated by the fetch pipeline when ESPN/Torvik endpoints are available. If those sources fail, the pipeline falls back to defaults and you can optionally backfill manually. See `DATA_INPUT_CHECKLIST.md` for the full post-bracket workflow.
+`NET_Rank` and `Star_Player_Index` are auto-populated by the fetch pipeline when ESPN/Torvik endpoints are available. If those sources fail, the pipeline falls back to defaults and you can optionally backfill manually. See `DATA_INPUT_CHECKLIST.md` for the full post-bracket workflow.
 
 ---
 
@@ -133,7 +133,7 @@ Implement in this order:
 
 4. `apply_conf_tourney_champion_bonus(df)` — adds +0.05 to `Last_10_Games_Metric` for teams where `Conf_Tourney_Champion == 1`, capped at 1.0.
 
-5. `apply_overrides(df, overrides_path)` — reads `overrides.json`, applies delta or absolute adjustments to any numeric column (AdjO, AdjD, AdjEM, Star_Player_Index, Bench_Minutes_Pct, etc.), sets `OverrideActive = 1` flag. Recalculates `AdjEM = AdjO - AdjD` after applying individual AdjO/AdjD deltas.
+5. `apply_overrides(df, overrides_path)` — reads `overrides.json`, applies delta or absolute adjustments to any numeric column (AdjO, AdjD, AdjEM, Star_Player_Index, etc.), sets `OverrideActive = 1` flag. Recalculates `AdjEM = AdjO - AdjD` after applying individual AdjO/AdjD deltas.
 
 6. `validate_columns(df) -> list[str]` — returns list of missing required column names. Empty list = data is clean.
 
@@ -235,7 +235,7 @@ This is the largest and most important module. Build in this order:
 Rank, Team, Seed, Conference, Record, PowerScore, [ModelScore],
 AdjEM, AdjO, AdjD, Barthag, eFG%, Opp_eFG%, TO%, Opp_TO%,
 OR%, DR%, FTR, FT%, SOS, Adj_T, WAB, Torvik_Rank,
-NET_Rank, CompRank, AP_Poll_Rank, Exp, Coach_Tourney_Experience,
+NET_Rank, CompRank, AP_Poll_Rank, Coach_Tourney_Experience,
 Program_Prestige, Last_10_Games_Metric, Luck,
 CinderellaScore, CinderellaAlertLevel, SeedMismatch,
 FraudScore, FraudLevel, FraudExplanation,

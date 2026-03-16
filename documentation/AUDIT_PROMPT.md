@@ -82,7 +82,7 @@ assert 'PPP_Def' in df.columns, "PPP_Def missing from ingested data"
 
 # Check 4: All prompt-output columns exist in CSV
 prompt_cols = ['Seed', 'NET_Rank', 'Quad1_Wins', 'Last_10_Games_Metric',
-               'Conf_Tourney_Champion', 'Star_Player_Index', 'Exp', 'Bench_Minutes_Pct']
+               'Conf_Tourney_Champion', 'Star_Player_Index']
 for col in prompt_cols:
     assert col in df.columns, f"Prompt-output column '{col}' missing from CSV"
 

@@ -35,7 +35,7 @@ python scripts/fetch_data.py --year 2026
 This auto-fetches ~40 columns for all ~365 D-I teams from BartTorvik, ESPN, and Massey:
 - All efficiency stats (AdjO, AdjD, AdjEM, Barthag, four factors, tempo, height, etc.)
 - Rankings (Torvik_Rank, Massey_Rank, NET_Rank, AP_Poll_Rank, CompRank)
-- Player-derived metrics (Star_Player_Index from BPM, Bench_Minutes_Pct from minutes)
+- Player-derived metrics (Star_Player_Index from BPM)
 - Ranking trajectory (TRank_Early, RankTrajectory)
 - Luck metric (WinPct - Barthag, computed automatically)
 - Program_Prestige (static lookup)

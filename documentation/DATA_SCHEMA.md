@@ -68,13 +68,11 @@ One row per team. The pipeline accepts up to 365 rows (full D-I season) but oper
 
 | Column | Type | Unit/Range | Direction | Description | Source |
 |--------|------|-----------|-----------|-------------|--------|
-| `Exp` | float | 0.0–3.0 | Higher better | Experience rating: weighted average years of experience of rotation players | Torvik |
 | `Quad1_Wins` | int | 0–15 | Higher better | Wins vs Quad 1 opponents (top ~75 teams by NET rank, on road/neutral) | Manual/ESPN |
 | `Elite_SOS` | float | 0–50 | Higher better | Percentage of games vs top-50 NET opponents | Manual |
 | `Last_10_Games_Metric` | float | 0.0–1.0 | Higher better | Win rate over last 10 games including conf tournament (1.0 = 10-0). Include conf tournament wins | Manual |
 | `Massey_Rank` | int | 1–365 | Lower better | Massey composite ranking (aggregates 50+ systems) | masseyratings.com |
 | `Star_Player_Index` | float | 1–10 | Higher better | Presence/quality of star player(s); 10 = elite NBA prospect. Auto-computed from Torvik player BPM data; override manually for standouts | Auto (Torvik players) |
-| `Bench_Minutes_Pct` | float | 20–55 | Higher better | Percentage of total minutes played by bench (depth metric). Auto-computed from Torvik player minutes data | Auto (Torvik players) |
 | `Coach_Tourney_Experience` | float | 0–10 | Higher better | Composite coach tournament experience score. Scoring rubric: +3 Final Four 2x, +2 Natl Champ, +2 won conf tourney 3x, +2 15+ NCAA appearances, +1 500+ career wins. Research: 7 of 10 recent champions had coaches with 24+ years experience | Manual once/year (~15 min) |
 | `Program_Prestige` | float | 0–10 | Higher better | Blue blood / program history index. Duke/Kansas/Kentucky = 10, default unlisted = 2. See PROGRAM_PRESTIGE dict in API_DATA_SOURCES.md. Added automatically by fetch_data.py | Static lookup (auto-applied) |
 | `TRank_Early` | int | 1–365 | Lower better | Torvik T-Rank snapshot ~4 weeks before Selection Sunday. Used to compute ranking trajectory: `TRank_Early − Torvik_Rank` = positive means team improved. Source: BartTorvik Time Machine endpoint (automated via fetch_data.py) | Auto (Torvik Time Machine) |
@@ -118,12 +116,10 @@ These are computed by the pipeline from the input columns above. Never include t
 | `Seed` | `10` | Middle seed; neutral assumption |
 | `Conference` | `"Unknown"` | Flagged for manual review |
 | `Star_Player_Index` | `5.0` | Average player quality |
-| `Bench_Minutes_Pct` | `30.0` | Average bench usage |
 | `Last_10_Games_Metric` | `0.65` | Slight above-.500 default |
 | `Massey_Rank` | `150` | Middle of field |
 | `Elite_SOS` | `10.0` | Below-average elite SOS |
 | `Quad1_Wins` | `3` | Modest Q1 record |
-| `Exp` | `1.5` | Moderately experienced |
 | `Avg_Hgt` | `77.0` | Average D-I height |
 | `Eff_Hgt` | `79.0` | Average effective height |
 | `AP_Poll_Rank` | `26` | Unranked — just outside AP Top 25 |
@@ -220,7 +216,7 @@ Used for injury adjustments and manual corrections. Applied before any scoring r
 - `mode: "delta"` — values are added to the team's original stats
 - `mode: "absolute"` — values replace the team's original stats entirely
 - `note` is optional, shown in output tables next to overridden teams
-- Any numeric column from `teams_input.csv` can be overridden (AdjO, AdjD, AdjEM, Star_Player_Index, Bench_Minutes_Pct, etc.)
+- Any numeric column from `teams_input.csv` can be overridden (AdjO, AdjD, AdjEM, Star_Player_Index, etc.)
 
 ### Star Player Injury Interaction
 
@@ -289,7 +285,7 @@ All model weight dictionaries are stored here, not in code. Each model is a JSON
 | `cinderellaWeights` | SeedMismatch (25%), AdjD (18%), Opp_TO% (15%) | Cinderella Rankings (seed 9+) |
 | `favoritesWeights` | AdjEM (40%), Barthag (25%), CompRank (20%) | Favorites bracket strategy |
 | `analyticsWeights` | AdjEM (35%), Barthag (25%), AdjO/AdjD (30%) | Analytics bracket strategy |
-| `experienceWeights` | Exp (25%), TournamentReadiness (20%), AdjEM (20%) | Experience bracket strategy |
+| `experienceWeights` | TournamentReadiness (30%), AdjEM (25%), CloseGame (20%) | Experience bracket strategy |
 
 ---
 
@@ -340,7 +336,7 @@ All 6 ranking CSVs share this column structure (in order):
 Rank, Team, Seed, Conference, Record, PowerScore, [ModelScore],
 AdjEM, AdjO, AdjD, Barthag, eFG%, Opp_eFG%, TO%, Opp_TO%,
 OR%, DR%, FTR, FT%, SOS, Adj_T, WAB, Torvik_Rank,
-NET_Rank, CompRank, AP_Poll_Rank, Exp, Coach_Tourney_Experience,
+NET_Rank, CompRank, AP_Poll_Rank, Coach_Tourney_Experience,
 Program_Prestige, Last_10_Games_Metric, Luck,
 CinderellaScore, CinderellaAlertLevel, SeedMismatch,
 FraudScore, FraudLevel,
@@ -472,7 +468,6 @@ The pipeline's `normalize_aliases()` function maps these alternate column names 
 | `Elite SOS` | `Elite_SOS` |
 | `Avg Hgt.` | `Avg_Hgt` |
 | `Eff. Hgt.` | `Eff_Hgt` |
-| `Exp.` | `Exp` |
 | `T_Rank_Early` | `TRank_Early` |
 | `T_Rank` | `Torvik_Rank` |
 | `wAB` | `WAB` |

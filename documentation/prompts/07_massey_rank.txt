@@ -1,0 +1,102 @@
+TASK: Massey Composite Rankings
+WHEN TO RUN: After the bracket is announced (any time before running the app)
+OUTPUT FORMAT: CSV values to update the Massey_Rank column in data/teams_input.csv
+TIME: ~5 minutes
+
+
+PROMPT TO SEND TO CLAUDE RESEARCH
+==================================
+
+I need the Massey Composite ranking for each of the 68 teams in the 2026 NCAA Men's Basketball Tournament.
+
+The Massey Composite is at masseyratings.com/cb/compare.htm — it averages together 50+ computer ranking systems into a single composite rank. Every D1 team has a Massey Composite rank from 1 to ~365.
+
+Give me a CSV table with exactly two columns:
+
+Team, Massey_Rank
+
+- Team: Use ONLY the team names from the list below. Match them exactly.
+- Massey_Rank: The team's Massey Composite ranking (integer, 1 = best). If you can't find the exact Massey Composite, use the closest available composite ranking system (e.g., RealTimeRPI, TeamRankings, or ColleyMatrix).
+
+Output ONLY the CSV with a header row and 68 data rows. No explanations or extra text.
+
+
+TEAM NAME LIST
+==============
+Akron
+Alabama
+Arizona
+Arkansas
+BYU
+Cal Baptist
+Clemson
+Connecticut
+Duke
+Florida
+Furman
+Georgia
+Gonzaga
+Hawaii
+High Point
+Hofstra
+Houston
+Howard
+Idaho
+Illinois
+Iowa
+Iowa St.
+Kansas
+Kennesaw St.
+Kentucky
+Lehigh
+LIU
+Louisville
+McNeese St.
+Miami FL
+Miami OH
+Michigan
+Michigan St.
+Missouri
+N.C. State
+Nebraska
+North Carolina
+North Dakota St.
+Northern Iowa
+Ohio St.
+Penn
+Prairie View A&M
+Purdue
+Queens
+Saint Louis
+Saint Mary's
+Santa Clara
+Siena
+SMU
+South Florida
+St. John's
+TCU
+Tennessee
+Tennessee St.
+Texas
+Texas A&M
+Texas Tech
+Troy
+UCLA
+UCF
+UMBC
+Utah St.
+VCU
+Vanderbilt
+Villanova
+Virginia
+Wisconsin
+Wright St.
+
+
+WHAT TO DO WITH THE OUTPUT
+==========================
+
+1. Save the output somewhere temporarily.
+
+2. Paste it to the AI assistant in Cursor and say:
+   "Here is the Massey Rank data for the 68 tournament teams. Please merge it into data/teams_input.csv in the Massey_Rank column."

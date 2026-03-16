@@ -346,12 +346,11 @@ def fetch_espn_net_rank() -> pd.DataFrame | None:
 
 
 def compute_player_metrics(year: int) -> pd.DataFrame | None:
-    """Compute Star_Player_Index and Bench_Minutes_Pct from Torvik player CSV.
+    """Compute Star_Player_Index from Torvik player CSV.
 
     The player CSV endpoint is behind strong Cloudflare protection that
-    cloudscraper cannot reliably bypass.  When blocked, player metrics
-    default to Star_Player_Index=5.0 and Bench_Minutes_Pct=30.0 and can
-    be refined via overrides.json or Claude Research prompt 04.
+    cloudscraper cannot reliably bypass.  When blocked, Star_Player_Index
+    defaults to 5.0 and can be refined via overrides.json or prompt 04.
     """
     try:
         scraper = cloudscraper.create_scraper()
@@ -372,13 +371,7 @@ def compute_player_metrics(year: int) -> pd.DataFrame | None:
             group = group.sort_values("Min", ascending=False)
             top_player_bpm = float(group.iloc[0].get("BPM", 0.0)) if len(group) > 0 else 0.0
             star_index = float(np.clip(top_player_bpm * 0.8 + 3, 1, 10))
-            total_min = float(pd.to_numeric(group["Min"], errors="coerce").sum())
-            if total_min > 0 and len(group) > 5:
-                bench_min = float(pd.to_numeric(group.iloc[5:]["Min"], errors="coerce").sum())
-                bench_pct = bench_min / total_min
-            else:
-                bench_pct = 0.30
-            rows.append({"Team": team_name, "Star_Player_Index": round(star_index, 1), "Bench_Minutes_Pct": round(bench_pct, 3)})
+            rows.append({"Team": team_name, "Star_Player_Index": round(star_index, 1)})
         if rows:
             print(f"  ✓ Player metrics: {len(rows)} teams")
         return pd.DataFrame(rows)
@@ -454,7 +447,7 @@ def merge_all_sources(
     PLACEHOLDER_COLUMNS = [
         "Seed", "NET_Rank", "Quad1_Wins", "Last_10_Games_Metric",
         "Conf_Tourney_Champion", "Won_Play_In",
-        "Star_Player_Index", "Bench_Minutes_Pct", "Exp",
+        "Star_Player_Index",
         "Elite_SOS", "Conf_Strength_Weight",
     ]
     for col in PLACEHOLDER_COLUMNS:
@@ -472,7 +465,7 @@ def merge_all_sources(
         "Torvik_Rank", "NET_Rank", "Massey_Rank", "CompRank",
         "TRank_Early", "RankTrajectory",
         "AP_Poll_Rank", "Luck",
-        "Exp", "Star_Player_Index", "Bench_Minutes_Pct",
+        "Star_Player_Index",
         "Coach_Tourney_Experience", "Program_Prestige",
         "Quad1_Wins", "Last_10_Games_Metric",
         "Conf_Strength_Weight", "Conf_Tourney_Champion", "Won_Play_In",

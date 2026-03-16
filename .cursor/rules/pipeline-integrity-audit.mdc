@@ -29,12 +29,12 @@ Claude Research prompts (documentation/prompts/01-06)
 | 03 | coach_scores.json | JSON {team: score} | main._apply_coach_scores() → Coach_Tourney_Experience |
 | 04 | teams_input.csv | Star_Player_Index (overrides only) | ingestion.load_teams() |
 | 05 | overrides.json | AdjO/AdjD deltas per team | ingestion.apply_overrides() |
-| 06 | teams_input.csv | Exp, Bench_Minutes_Pct | ingestion.load_teams() |
+| 07 | teams_input.csv | Massey_Rank | ingestion.load_teams() |
 
 ## Columns That Must Exist as Placeholders in fetch_data.py
 
 These are created as NaN so users can paste prompt output without adding columns:
-`Seed, NET_Rank, Quad1_Wins, Last_10_Games_Metric, Conf_Tourney_Champion, Won_Play_In, Star_Player_Index, Bench_Minutes_Pct, Exp, Elite_SOS, Conf_Strength_Weight`
+`Seed, NET_Rank, Quad1_Wins, Last_10_Games_Metric, Conf_Tourney_Champion, Won_Play_In, Star_Player_Index, Elite_SOS, Conf_Strength_Weight`
 
 If you add a new column that prompts populate → add it to both `PLACEHOLDER_COLUMNS` and `SCHEMA_COLUMNS` in `scripts/fetch_data.py`.
 
@@ -52,7 +52,7 @@ If you add a new inverse feature to `FEATURE_RANGES` → the `_inv` alias is cre
 
 Each derived metric's inputs must resolve to non-0.5 values for the metric to have discriminating power. Verify:
 - `PPP_Off` / `PPP_Def` — computed from AdjO/AdjD in `engine/ingestion.py _ensure_adjem()`
-- `TournamentReadiness` — depends on Barthag (auto), Exp (prompt 06), Quad1_Wins (prompt 01)
+- `TournamentReadiness` — depends on Barthag (auto), Quad1_Wins (prompt 01)
 - `Physicality` — depends on OR% (auto), Blk_% (auto), FTR (auto), Eff_Hgt (defaults to 79.0)
 - `BallMovement` — depends on AST_TO (defaults to 0.5 — no source), Ast_% (auto), Op_Ast_%_inv (auto)
 
@@ -63,7 +63,6 @@ These default because no reliable automated source exists:
 - `Avg_Hgt` / `Eff_Hgt` → 77.0 / 79.0 (Torvik PHP endpoints are Cloudflare-blocked)
 - `AST_TO` → 0.5 (not computable from available data)
 - `Star_Player_Index` → 5.0 unless overridden by prompt 04
-- `Bench_Minutes_Pct` → 30.0 unless overridden by prompt 06
 
 ## Verification Checklist
 

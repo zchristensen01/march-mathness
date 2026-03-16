@@ -39,10 +39,8 @@ FEATURE_RANGES: dict[str, tuple[float, float, str]] = {
     "Torvik_Rank": (1, 365, "inverse"),
     "Massey_Rank": (1, 365, "inverse"),
     "NET_Rank": (1, 365, "inverse"),
-    "Exp": (0, 3, "higher"),
     "Last_10_Games_Metric": (0.3, 1.0, "higher"),
     "Star_Player_Index": (1, 10, "higher"),
-    "Bench_Minutes_Pct": (20, 55, "higher"),
     "Quad1_Wins": (0, 15, "higher"),
     "Elite_SOS": (0, 50, "higher"),
     "PPP_Off": (0.88, 1.30, "higher"),
@@ -161,9 +159,8 @@ def compute_derived_features(norm: dict[str, float]) -> dict[str, float]:
             + norm.get("DR%", 0.5) * 0.20
         ),
         "TournamentReadiness": (
-            norm.get("Barthag", 0.5) * 0.50
-            + norm.get("Exp", 0.5) * 0.30
-            + norm.get("Quad1_Wins", 0.5) * 0.20
+            norm.get("Barthag", 0.5) * 0.60
+            + norm.get("Quad1_Wins", 0.5) * 0.40
         ),
         "DefensivePlaymaking": (
             norm.get("Opp_TO%", 0.5) * 0.55

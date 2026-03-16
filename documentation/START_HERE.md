@@ -58,7 +58,7 @@ It builds `data/teams_input.csv` (all D-I teams) by pulling and merging:
 
 - Efficiency/four-factor stats
 - `NET_Rank` (if ESPN endpoint succeeds)
-- `Star_Player_Index`, `Bench_Minutes_Pct` (if Torvik player endpoint succeeds)
+- `Star_Player_Index` (if Torvik player endpoint succeeds)
 - `CompRank`, `Luck`, `Program_Prestige`, `Coach_Tourney_Experience` defaults/merges
 
 ---
@@ -98,7 +98,7 @@ Use prompts in this order:
 - Prompt 03 output -> save as `data/coach_scores.json`
 - Prompt 04 output -> update `Star_Player_Index` overrides in `data/teams_input.csv` for listed teams only
 - Prompt 05 output -> save as `data/overrides.json`
-- Prompt 06 output -> update `Exp` and `Bench_Minutes_Pct` columns in `data/teams_input.csv`
+- Prompt 07 output -> update `Massey_Rank` column in `data/teams_input.csv`
 
 ---
 
