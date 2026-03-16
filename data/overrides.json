@@ -1,0 +1,104 @@
+{
+    "Texas Tech": {
+      "mode": "delta",
+      "AdjEM": -5.5,
+      "Star_Player_Index": -2.0,
+      "note": "JT Toppin (starter, All-American F) -- out for season with torn ACL (Feb 17). Averaged 21.8 PPG, 10.8 RPG, only D-I player at 20+/10+. Consensus second-team All-American, Big 12 POTY. Team 3-3 without him, lost by 22 in Big 12 Tournament."
+    },
+    "North Carolina": {
+      "mode": "delta",
+      "AdjEM": -5.0,
+      "Star_Player_Index": 0,
+      "note": "Caleb Wilson (starter, star freshman F) -- out for season, broke right thumb in practice (March 5) after previously fracturing left hand (Feb 10). Averaged 19.8 PPG, 9.4 RPG. Projected top-5 NBA pick. Team scored 8 fewer PPG without him."
+    },
+    "BYU": {
+      "mode": "delta",
+      "AdjEM": -4.5,
+      "Star_Player_Index": -1.5,
+      "note": "Richie Saunders (starter, All-Big 12 G/W) -- out for season with torn ACL (Feb 14). Averaged 18.0 PPG, 5.8 RPG, team's heart and soul. BYU went 5-9 after his injury. Also lost Dawson Baker, Nate Pickens, Brody Kozlowski to season-ending injuries -- four total season-enders."
+    },
+    "Duke": {
+      "mode": "delta",
+      "AdjEM": -1.0,
+      "Star_Player_Index": 0,
+      "note": "Caleb Foster (starter, veteran G) -- out with fractured right foot requiring surgery (March 9), return unlikely before Final Four. Averaged 8.5 PPG, 2.8 APG, 40% from 3; key veteran on very young team. PARTIALLY OFFSET by Patrick Ngongba II (starter, C, 10.7 PPG, 6.0 RPG, 1.1 BPG) trending toward return for NCAA opener after missing ACC Tournament with foot soreness."
+    },
+    "Gonzaga": {
+      "mode": "delta",
+      "AdjEM": -3.5,
+      "Star_Player_Index": -1.5,
+      "note": "Braden Huff (starter, co-leading scorer F) -- doubtful for first weekend, possible second-weekend return from left knee injury (out since Jan 15). Was averaging 17.8 PPG on 66.2% FG; Gonzaga offense dropped from 14th to 68th nationally without him. Jalen Warley (rotation wing) also limited with persistent quad contusion described as 'non-functional' by coach Few."
+    },
+    "Louisville": {
+      "mode": "delta",
+      "AdjEM": -3.5,
+      "Star_Player_Index": -3.0,
+      "note": "Mikel Brown Jr. (starter, star freshman G) -- questionable with chronic back injury, missed ACC Tournament and 10 games total. Averaged 18.2 PPG, 4.7 APG. Projected NBA lottery pick. Louisville lost by average of 13.7 points in his absences. Hoping to return for NCAA Tournament but status highly uncertain."
+    },
+    "Clemson": {
+      "mode": "delta",
+      "AdjEM": -2.0,
+      "Star_Player_Index": 0,
+      "note": "Carter Welling (starter, C) -- out for season with torn ACL suffered in ACC Tournament second round (March 11). Averaged 10.2 PPG, 5.4 RPG as 6-11 defensive anchor and leading rebounder. Very recent injury, team has had no time to adjust."
+    },
+    "Tennessee": {
+      "mode": "delta",
+      "AdjEM": -1.5,
+      "Star_Player_Index": -1.0,
+      "note": "Nate Ament (starter, star freshman F) -- playing but clearly limited with right high ankle sprain aggravated Feb 28 vs Alabama. Averaged 17.4 PPG, 6.4 RPG when healthy. Projected top-10 NBA pick. Shot 1-of-13 in SEC Tournament game. Coach Barnes: 'He's not 100%. We know it.'"
+    },
+    "Villanova": {
+      "mode": "delta",
+      "AdjEM": -1.5,
+      "Star_Player_Index": 0,
+      "note": "Matt Hodge (starter, freshman F) -- out for season with torn ACL (Feb 28 vs St. John's). Started all 29 games, averaged 9.2 PPG on 45.2% FG and 36.8% from 3. Replaced by Malachi Palmer in starting lineup."
+    },
+    "Michigan": {
+      "mode": "delta",
+      "AdjEM": -1.0,
+      "Star_Player_Index": 0,
+      "note": "L.J. Cason (key reserve, backup PG) -- out for season with torn ACL (Feb 27 vs Illinois). Averaged 8.4 PPG off the bench; coach May called him 'the best backup PG in college basketball.' Limits backcourt depth behind starter Elliot Cadeau for potential six-game tournament run."
+    },
+    "SMU": {
+      "mode": "delta",
+      "AdjEM": 2.0,
+      "Star_Player_Index": 0,
+      "note": "B.J. Edwards (starter, G) -- returning for NCAA Tournament after missing 5 games with ankle injury (since Feb 25). Averaged 12.7 PPG, 4.9 APG, 2.3 SPG. SMU went 1-4 without him. ESPN confirmed availability March 13. Team significantly better with him."
+    },
+    "Arkansas": {
+      "mode": "delta",
+      "AdjEM": -1.0,
+      "Star_Player_Index": 0,
+      "note": "Karter Knox (rotation F) -- out indefinitely after left meniscus surgery (Feb 19). Averaged 8.1 PPG, 4.5 RPG in 22 games. Outside chance of return in later rounds. Arkansas won SEC Tournament without him but loses wing depth."
+    },
+    "Kentucky": {
+      "mode": "delta",
+      "AdjEM": -5.0,
+      "Star_Player_Index": -2.0,
+      "note": "Jaland Lowe (starter G) -- out for season after right shoulder surgery; Jayden Quaintance (starter F) -- out/doubtful with recurring knee swelling; Kam Williams (key wing) -- questionable after broken-foot surgery."
+    },
+    "Connecticut": {
+      "mode": "delta",
+      "AdjEM": -1.0,
+      "Star_Player_Index": 0,
+      "note": "Jaylin Stewart (bench F) -- questionable with right knee inflammation; Silas Demary Jr. (G) -- probable after ankle sprain with negative X-rays."
+    },
+    "Texas A&M": {
+      "mode": "delta",
+      "AdjEM": -2.0,
+      "Star_Player_Index": 0,
+      "note": "Mackenzie Mgbako (starting F) -- out for season with foot injury after playing only seven games."
+    },
+    "Vanderbilt": {
+      "mode": "delta",
+      "AdjEM": -1.0,
+      "Star_Player_Index": 0,
+      "note": "Frankie Collins (key guard) -- uncertain/possibly out after long knee absence since Dec. 17; Duke Miles has returned, partially offsetting depth loss."
+    },
+    "Kansas": {
+      "mode": "delta",
+      "AdjEM": -0.5,
+      "Star_Player_Index": 0,
+      "note": "Darryn Peterson is available but carries recurring hamstring/ankle/cramp durability risk entering tournament play."
+    }
+  }
