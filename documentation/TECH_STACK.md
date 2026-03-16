@@ -55,7 +55,7 @@ march_mathness/
 │   ├── __init__.py
 │   ├── ingestion.py           # CSV parsing, validation, alias normalization
 │   ├── normalization.py       # Min-max normalization, inverse normalization
-│   ├── conference.py          # Conference Strength Index (WIN50 method)
+│   ├── conference.py          # Legacy/unused in active scoring pipeline
 │   ├── scoring.py             # All model scoring (power, cinderella, etc.)
 │   ├── win_probability.py     # AdjEM-based logistic win prob function
 │   ├── simulation.py          # Monte Carlo bracket simulation
@@ -64,7 +64,7 @@ march_mathness/
 │
 ├── models/
 │   ├── weights.json           # All model weight dictionaries (external, tunable)
-│   └── conference_weights.json # Conference multipliers
+│   └── conference_weights.json # Legacy config (not used by active pipeline)
 │
 ├── outputs/                   # All generated artifacts land here
 │   ├── rankings/
@@ -121,9 +121,7 @@ pip install -r requirements.txt
 - Defines `FEATURE_RANGES: Dict[str, Tuple[float, float, str]]`  (name → (min, max, direction))
 
 ### `engine/conference.py`
-- `compute_conference_ratings(df) -> pd.DataFrame`  (one row per conference)
-- `win50_rating(conference_adjems: List[float]) -> float`  (scipy brentq solver)
-- `apply_csi_adjustment(df, conf_ratings) -> pd.DataFrame`  (multiplier applied to team scores)
+- Legacy module kept for historical reference; current scoring path does not call it
 
 ### `engine/scoring.py`
 - `score_all_teams(df, weights_dict, model_name) -> pd.DataFrame`
@@ -159,9 +157,6 @@ python main.py --mode full
 # Rankings only (no bracket needed)
 python main.py --mode rankings
 
-# Re-run with updated overrides
-python main.py --mode full --overrides data/overrides.json
-
 # Run with a specific random seed for reproducibility
 python main.py --mode full --seed 123
 
@@ -177,11 +172,13 @@ streamlit run app.py
 app.py
 ├── Sidebar: Upload CSV, upload bracket, upload overrides, Run button
 ├── Tab 1: 📊 Power Rankings  (sortable table, color-coded scores)
-├── Tab 2: 🔮 Cinderella Scores  (filtered to seed 9+, alert badges)
-├── Tab 3: 🏆 Conference Strength  (bar chart + table)
-├── Tab 4: 🎯 Matchup Calculator  (two-team selector → win probability)
-├── Tab 5: 🎲 Bracket Simulation  (strategy selector, bracket diagram, round probs)
-└── Tab 6: ⚙️  Settings & Overrides  (live JSON editor for injury adjustments)
+├── Tab 2: 📈 Team Traits  (single-metric leaderboards)
+├── Tab 3: 🔮 Cinderella Scores  (filtered to seed 9+, alert badges)
+├── Tab 4: 💀 Fraud Alerts  (seeds 1-6)
+├── Tab 5: 🎯 Matchup Calculator  (two-team selector → win probability)
+├── Tab 6: 🎲 Bracket Simulation  (strategy selector, round probs)
+├── Tab 7: 📋 Bracket Strategies
+└── Tab 8: 📄 Pick Sheet
 ```
 
 ---

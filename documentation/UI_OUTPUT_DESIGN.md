@@ -240,15 +240,14 @@ Seeds 9+ only. The main upset-hunting view.
 └────────────────────────────────────────┘
 ```
 
-### Tab 3: 🏆 Conference Strength
+### Tab 3: 🔮 Cinderella Scores
 
 **Key UI elements:**
-- Horizontal bar chart of CSI multipliers by conference
-- Table with: Conference, WIN50 Rating, Avg AdjEM, Teams in Top 25, Hist Tourney Win%, CSI Multiplier
-- Color coding: green (≥1.0 multiplier), yellow (0.88–0.99), red (<0.88)
-- Note at bottom: "Teams in red conferences have stats that may be inflated vs actual tournament competition"
+- Ranked table for seeds 9+ with `CinderellaScore` and `CinderellaAlertLevel`
+- Filter controls: All / HIGH / WATCH
+- Expandable component breakdown fields (`C_SeedMismatch`, `C_Defense`, `C_Turnover`, `C_Tempo`, `C_Rebounding`, `C_RankValue`)
 
-### Tab 4: 🎯 Matchup Calculator
+### Tab 5: 🎯 Matchup Calculator
 
 An interactive tool: select any two teams and see the full matchup analysis.
 
@@ -258,7 +257,7 @@ An interactive tool: select any two teams and see the full matchup analysis.
 - Shows: win probability bar, predicted spread, confidence tier, model consensus, historical seed matchup rate
 - "Add to my bracket" button that saves to a personal picks session state
 
-### Tab 5: 🎲 Bracket Simulation
+### Tab 6: 🎲 Bracket Simulation
 
 The simulation results view. Most important tab for pool strategy.
 
@@ -280,7 +279,7 @@ Houston       ████████████           10.9%
 NM State ⚡   ████                    3.2%  ← Giant Killer bonus applied
 ```
 
-### Tab 6: 📋 Bracket Strategies
+### Tab 7: 📋 Bracket Strategies
 
 A side-by-side bracket visualization.
 
@@ -305,7 +304,7 @@ Matchup          | Consensus Pick   | Agreement | Model Split
 ...
 ```
 
-### Tab 7: ⚙️ Settings & Overrides
+### Tab 8: 📄 Pick Sheet
 
 The injury override editor.
 
@@ -353,7 +352,7 @@ Three panels side by side:
 
 **Section 5: Simulation Results** (top-20 championship probabilities as chart)
 
-**Section 6: Conference Strength** (bar chart + table)
+**Section 6: Matchup + strategy outputs (no conference-strength section)**
 
 **Section 7: Strategy Comparison** (8 brackets, one per tab)
 

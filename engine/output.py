@@ -40,15 +40,6 @@ def write_ranking_csv(df: pd.DataFrame, model_name: str, output_dir: str) -> Pat
     return path
 
 
-def write_conference_strength_csv(conf_ratings: pd.DataFrame, output_dir: str) -> Path:
-    """Write conference strength CSV."""
-    target_dir = Path(output_dir) / "rankings"
-    _ensure_dir(target_dir)
-    path = target_dir / "conference_strength.csv"
-    conf_ratings.to_csv(path, index=False)
-    return path
-
-
 def write_bracket_json(bracket: dict[str, Any], strategy_name: str, output_dir: str) -> Path:
     """Write bracket JSON for one strategy."""
     target_dir = Path(output_dir) / "brackets"
@@ -370,7 +361,6 @@ def write_all_outputs(
     simulation: dict[str, Any],
     summary: dict[str, Any],
     config: dict[str, Any],
-    conf_ratings: pd.DataFrame | None = None,
     all_teams_for_verdicts: list[dict[str, Any]] | None = None,
     win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float] | None = None,
     bracket_input: dict[str, Any] | None = None
@@ -382,9 +372,6 @@ def write_all_outputs(
     for model_name, df in rankings.items():
         path = write_ranking_csv(df, model_name, output_dir)
         written["rankings"].append(str(path))
-
-    if conf_ratings is not None and not conf_ratings.empty:
-        written["rankings"].append(str(write_conference_strength_csv(conf_ratings, output_dir)))
 
     for strategy_name, bracket in brackets.items():
         written["brackets"].append(str(write_bracket_json(bracket, strategy_name, output_dir)))

@@ -133,7 +133,7 @@ python main.py --mode full --seed 123 --sims 20000
 
 1. **Ingestion**: alias mapping, default filling, luck computation, override application, schema validation
 2. **Normalization**: direction-correct min/max normalization and derived feature computation
-3. **Conference**: WIN50 CSI solver + multiplier assignment
+3. **Scoring Prep**: ranking feature prep and derived metrics (no CSI multiplier)
 4. **Scoring**: 9 weight models + Cinderella and Fraud meta-signals
 5. **Win probability**: normal-CDF + Elo blend + era seed priors + clipping
 6. **Simulation**: Monte Carlo advancement probabilities
@@ -145,7 +145,6 @@ python main.py --mode full --seed 123 --sims 20000
 Generated under `outputs/`:
 
 - `outputs/rankings/*_rankings.csv`
-- `outputs/rankings/conference_strength.csv`
 - `outputs/brackets/bracket_<strategy>.json`
 - `outputs/brackets/bracket_<strategy>.html`
 - `outputs/simulation_results.json`

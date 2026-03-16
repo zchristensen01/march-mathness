@@ -394,10 +394,7 @@ def run_tournament_update(config: dict):
     deriveds = [compute_derived_features(n) for n in norms]
     
     print("\n[4/5] Re-running scoring models on surviving field...")
-    conf_ratings = compute_all_conference_ratings(df_survivors)
-    df_survivors = apply_csi_to_teams(df_survivors, conf_ratings)
-    csi_mults = df_survivors['CSI_multiplier'].tolist()
-    rankings = generate_all_rankings(df_survivors, norms, deriveds, csi_mults)
+    rankings = generate_all_rankings(df_survivors, norms, deriveds)
     
     # Step 6: Re-run simulation on remaining bracket
     print("\n[5/5] Re-running Monte Carlo simulation on remaining bracket...")

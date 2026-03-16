@@ -91,8 +91,7 @@ def test_generate_all_rankings_smoke() -> None:
         {"Physicality": 0.65, "BallMovement": 0.72, "CloseGame": 0.8, "TournamentReadiness": 0.85, "DefensivePlaymaking": 0.7, "InsideScoring": 0.76, "InteriorDefense": 0.74, "NETMomentum": 0.6},
         {"Physicality": 0.52, "BallMovement": 0.58, "CloseGame": 0.66, "TournamentReadiness": 0.62, "DefensivePlaymaking": 0.6, "InsideScoring": 0.59, "InteriorDefense": 0.57, "NETMomentum": 0.55}
     ]
-    csi = [1.0, 0.92]
-    rankings = generate_all_rankings(df, norms, deriveds, csi)
+    rankings = generate_all_rankings(df, norms, deriveds)
     assert "power" in rankings
     assert not rankings["power"].empty
 

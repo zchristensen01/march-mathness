@@ -43,15 +43,6 @@ SEED_TO_RANK_RANGES: dict[int, tuple[int, int]] = {
     16: (330, 365)
 }
 
-FRAUD_CONFERENCE_PENALTIES: dict[str, float] = {
-    "B10": 0.65,
-    "ACC": 0.25,
-    "BE": 0.20,
-    "MWC": 0.30,
-    "Big12": 0.00,
-    "SEC": 0.00
-}
-
 MODEL_NAME_TO_COLUMN: dict[str, str] = {
     "default": "PowerScore",
     "defensive": "DefensiveScore",
@@ -115,21 +106,15 @@ RANKING_COLUMN_ORDER: list[str] = [
     "F_Luck",
     "F_Variance",
     "F_StarDependence",
-    "F_Conference",
+    "F_FTRAllowed",
     "F_RankDivergence",
     "Consistency_Score",
     "Volatility_Score",
-    "CSI",
-    "CSI_multiplier",
     "Strengths",
     "OverrideActive"
 ]
 
-EXCLUDE_FROM_OUTPUT: set[str] = {
-    "Conf_Strength_Weight",
-    "Avg_Hgt",
-    "Eff_Hgt",
-}
+EXCLUDE_FROM_OUTPUT: set[str] = set()
 
 
 def load_weights(path: str = "models/weights.json") -> dict[str, dict[str, float]]:
@@ -170,9 +155,8 @@ def score_team(
     norm: dict[str, float],
     derived: dict[str, float],
     weights: dict[str, float],
-    csi_multiplier: float
 ) -> float:
-    """Calculate weighted score in [0, 100] then apply CSI."""
+    """Calculate weighted score in [0, 100] with no CSI multiplier."""
     score = 0.0
     for feature, weight in weights.items():
         if feature in norm:
@@ -182,7 +166,6 @@ def score_team(
         else:
             score += weight * 0.5
     score *= 100.0
-    score *= csi_multiplier
     return round(float(score), 1)
 
 
@@ -190,7 +173,6 @@ def score_all_teams(
     df: pd.DataFrame,
     norms: list[dict[str, float]],
     deriveds: list[dict[str, float]],
-    csi_multipliers: list[float],
     model_name: str,
     weights_lookup: dict[str, dict[str, float]] | None = None
 ) -> pd.Series:
@@ -198,7 +180,7 @@ def score_all_teams(
     models = weights_lookup if weights_lookup is not None else load_weights()
     weights = models[model_name]
     scores = [
-        score_team(norms[i], deriveds[i], weights, float(csi_multipliers[i]))
+        score_team(norms[i], deriveds[i], weights)
         for i in range(len(df))
     ]
     return pd.Series(scores, index=df.index)
@@ -295,22 +277,24 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
     adj_em = float(team.get("AdjEM", 0.0))
     team_depth = normalize_value(adj_em, -20, 40)
     dependence_score = float(np.clip(star_norm - team_depth * 0.7, 0.0, 1.0))
-
-    conf = str(team.get("Conference", "Unknown"))
-    conf_fraud = FRAUD_CONFERENCE_PENALTIES.get(conf, 0.15)
+    bench_minutes = float(team.get("Bench_Minutes_Pct", 15.0))
+    if bench_minutes < 10.0:
+        dependence_score = min(1.0, dependence_score + 0.10)
+    opp_ftr = float(team.get("Opp_FTR", 34.0))
+    ftr_allowed_score = normalize_value(opp_ftr, 18, 50)
     rank_divergence = compute_rank_divergence(team, norm)
 
     if float(team.get("Adj_T", 68.0)) < 65.0 and seed <= 4:
         imbalance_score = min(1.0, imbalance_score + 0.10)
 
     fraud_score = (
-        0.23 * seed_deviation_score
-        + 0.23 * imbalance_score
+        0.25 * seed_deviation_score
+        + 0.20 * imbalance_score
         + 0.14 * form_collapse_score
-        + 0.14 * luck_score
+        + 0.12 * luck_score
         + 0.10 * variance_score
         + 0.05 * dependence_score
-        + 0.03 * conf_fraud
+        + 0.06 * ftr_allowed_score
         + 0.08 * rank_divergence
     )
 
@@ -332,7 +316,7 @@ def compute_fraud_score(team: dict[str, Any], norm: dict[str, float]) -> dict[st
         "F_Luck": round(float(luck_score), 3),
         "F_Variance": round(float(variance_score), 3),
         "F_StarDependence": round(float(dependence_score), 3),
-        "F_Conference": round(float(conf_fraud), 3),
+        "F_FTRAllowed": round(float(ftr_allowed_score), 3),
         "F_RankDivergence": round(float(rank_divergence), 3),
         "RankDivergence": round(float(rank_divergence), 3),
     }
@@ -353,8 +337,8 @@ def get_fraud_explanation(team: dict[str, Any], fraud_result: dict[str, Any]) ->
         reasons.append("positive luck likely to regress")
     if fraud_result.get("F_Variance", 0) >= 0.60:
         reasons.append("high-variance style")
-    if fraud_result.get("F_Conference", 0) >= 0.55:
-        reasons.append(f"{team.get('Conference', 'conference')} historical underperformance")
+    if fraud_result.get("F_FTRAllowed", 0) >= 0.55:
+        reasons.append("allows too many free throws defensively")
     if fraud_result.get("F_StarDependence", 0) >= 0.60:
         reasons.append("single-player dependence")
     if fraud_result.get("F_RankDivergence", 0) >= 0.65:
@@ -379,8 +363,6 @@ def get_team_strengths(team: dict[str, Any]) -> list[str]:
         strengths.append("dominant offensive rebounding")
     if float(team.get("FT%", 0)) >= 78:
         strengths.append("excellent free throw shooting")
-    if float(team.get("AST_TO", 0)) >= 1.8:
-        strengths.append("exceptional ball movement")
     if float(team.get("AdjD", 999)) <= 92:
         strengths.append("elite defense")
     elif float(team.get("AdjD", 999)) <= 96:
@@ -395,8 +377,6 @@ def get_team_strengths(team: dict[str, Any]) -> list[str]:
         strengths.append("red-hot form")
     if float(team.get("Quad1_Wins", 0)) >= 8:
         strengths.append("battle-tested (Q1 wins)")
-    if float(team.get("Eff_Hgt", 0)) >= 82:
-        strengths.append("size advantage")
     if float(team.get("SOS", 365)) <= 30:
         strengths.append("elite SOS")
     return strengths[:4]
@@ -406,7 +386,6 @@ def generate_ranking(
     df: pd.DataFrame,
     norms: list[dict[str, float]],
     deriveds: list[dict[str, float]],
-    csi_mults: list[float],
     model_name: str,
     min_seed: int | None = None,
     max_seed: int | None = None
@@ -414,11 +393,11 @@ def generate_ranking(
     """Generate a ranking dataframe for one model."""
     work = df.copy().reset_index(drop=True)
     weights_lookup = load_weights()
-    scores = score_all_teams(work, norms, deriveds, csi_mults, model_name, weights_lookup)
+    scores = score_all_teams(work, norms, deriveds, model_name, weights_lookup)
     score_column = MODEL_NAME_TO_COLUMN.get(model_name, "ModelScore")
     work[score_column] = scores
     if "PowerScore" not in work.columns:
-        power = score_all_teams(work, norms, deriveds, csi_mults, "default", weights_lookup)
+        power = score_all_teams(work, norms, deriveds, "default", weights_lookup)
         work["PowerScore"] = power
 
     cinderella_values = []
@@ -468,7 +447,7 @@ def generate_ranking(
     numeric_fill_cols = [
         "C_SeedMismatch", "C_Defense", "C_Turnover", "C_Tempo", "C_Rebounding",
         "C_RankValue", "F_SeedDeviation", "F_Imbalance", "F_FormCollapse", "F_Luck",
-        "F_Variance", "F_StarDependence", "F_Conference",
+        "F_Variance", "F_StarDependence", "F_FTRAllowed",
         "F_RankDivergence", "CinderellaScore", "FraudScore",
     ]
     for col in numeric_fill_cols:
@@ -491,16 +470,15 @@ def generate_all_rankings(
     df: pd.DataFrame,
     norms: list[dict[str, float]],
     deriveds: list[dict[str, float]],
-    csi_mults: list[float]
 ) -> dict[str, pd.DataFrame]:
     """Generate all required ranking views."""
     rankings: dict[str, pd.DataFrame] = {}
-    rankings["power"] = generate_ranking(df, norms, deriveds, csi_mults, "default")
-    rankings["defensive"] = generate_ranking(df, norms, deriveds, csi_mults, "defensive")
-    rankings["offensive"] = generate_ranking(df, norms, deriveds, csi_mults, "offensive")
-    rankings["momentum"] = generate_ranking(df, norms, deriveds, csi_mults, "momentum")
-    rankings["cinderella"] = generate_ranking(df, norms, deriveds, csi_mults, "cinderella_tournament", min_seed=9)
-    rankings["giant_killer"] = generate_ranking(df, norms, deriveds, csi_mults, "giant_killer", min_seed=6)
+    rankings["power"] = generate_ranking(df, norms, deriveds, "default")
+    rankings["defensive"] = generate_ranking(df, norms, deriveds, "defensive")
+    rankings["offensive"] = generate_ranking(df, norms, deriveds, "offensive")
+    rankings["momentum"] = generate_ranking(df, norms, deriveds, "momentum")
+    rankings["cinderella"] = generate_ranking(df, norms, deriveds, "cinderella_tournament", min_seed=9)
+    rankings["giant_killer"] = generate_ranking(df, norms, deriveds, "giant_killer", min_seed=6)
     return rankings
 
 

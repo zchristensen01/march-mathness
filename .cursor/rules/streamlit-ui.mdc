@@ -6,36 +6,35 @@ alwaysApply: false
 
 # Streamlit UI Rules
 
-## Tab Structure (8 tabs)
+## Tab Structure (8 tabs, no setup tab)
 
 1. Power Rankings — sortable, color-coded by score tier
-2. Cinderella Scores — seeds 9+ only, expandable component breakdown
-3. Fraud Alerts — seeds 1–6, sorted by FraudScore desc
-4. Conference Strength — table + bar chart
-5. Matchup Calculator — two-team selector → win prob, spread, confidence tier
+2. Team Traits — sortable single-metric leaderboards
+3. Cinderella Scores — seeds 9+ only, expandable component breakdown
+4. Fraud Alerts — seeds 1–6, sorted by FraudScore desc
+5. Matchup Calculator — two-team selector -> win prob, spread, confidence tier
 6. Bracket Simulation — Monte Carlo results table (probabilities as %)
 7. Bracket Strategies — selector for 8 strategies, Final Four + champion
 8. Pick Sheet — plain-text printable bracket, download button
 
+## Controls Policy
+
+- No Streamlit sidebar usage for this app
+- No setup/upload/update controls inside the UI
+- Inputs are managed via files in `data/` and pipeline runs via CLI (`main.py`)
+
 ## Color Coding (score tiers)
 
-- ≥75: green (`#1a7f37`) — dominant
-- ≥60: medium green (`#2da44e`)
-- ≥45: yellow (`#f59e0b`) — toss-up
+- >=75: green (`#1a7f37`) — dominant
+- >=60: medium green (`#2da44e`)
+- >=45: yellow (`#f59e0b`) — toss-up
 - <45: red (`#ef4444`) — weak
 
 ## Verdict Labels (from UI_OUTPUT_DESIGN.md Section 4)
 
 Use pre-computed `bracket_matchup_verdicts.json` — no math at render time.
 
-## Sidebar
-
-- File uploaders: CSV, bracket JSON
-- Simulation controls: n_sims slider, random seed
-- Injury override JSON editor
-- Mid-tournament update section with ESPN auto/manual toggle
-
 ## Alert Formatting
 
-- Cinderella: 🔴 HIGH (>0.55), 🟡 WATCH (0.40–0.55), ⬜ No Signal (<0.40)
-- Fraud: 💀 HIGH (≥0.60), ⚠️ MEDIUM (0.40–0.59), 📋 LOW (<0.40)
+- Cinderella: HIGH (>0.55), WATCH (0.40-0.55), No Signal (<0.40)
+- Fraud: HIGH (>=0.60), MEDIUM (0.40-0.59), LOW (<0.40)

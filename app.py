@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -18,11 +16,11 @@ st.set_page_config(
     page_title="March Mathness",
     page_icon="🏀",
     layout="wide",
-    initial_sidebar_state="expanded"
 )
 
 OUTPUTS = Path("outputs")
 DATA_DIR = Path("data")
+PIPELINE_HINT = "Generate outputs first with `python main.py --mode full` (or `--mode rankings`)."
 
 
 def _build_metric_leaderboards(power_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -109,89 +107,18 @@ def _read_json(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _run_pipeline(mode: str) -> tuple[bool, str]:
-    cmd = [sys.executable, "main.py", "--mode", mode]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode == 0:
-        return True, proc.stdout
-    return False, proc.stderr
-
-
 st.title("🏀 March Mathness - Tournament Prediction Engine")
 
-with st.sidebar:
-    st.header("⚙️ Configuration")
-    st.caption("Upload your data files, then click **Run Analysis** to generate all predictions.")
-
-    uploaded_csv = st.file_uploader(
-        "Team stats CSV",
-        type=["csv"],
-        help="teams_input.csv — one row per tournament team with stats columns from Torvik/KenPom"
-    )
-    uploaded_bracket = st.file_uploader(
-        "Bracket structure JSON",
-        type=["json"],
-        help="bracket_input.json — defines seeds, regions, and slots. Required for bracket simulation."
-    )
-
-    st.divider()
-    st.subheader("🩹 Injury / Adjustment Overrides")
-    st.caption("Adjust team efficiency for injuries, suspensions, or other factors.")
-    override_text = st.text_area(
-        "overrides.json",
-        value='{\n  "TeamName": {\n    "mode": "delta",\n    "AdjEM": -2.5\n  }\n}',
-        height=120,
-        help="Use delta mode to shift a team's AdjEM. Negative = weaker (e.g. key player out)."
-    )
-
-    st.divider()
-    run_button = st.button("🚀 Run Analysis", type="primary", use_container_width=True)
-
-    st.divider()
-    st.subheader("🔄 Mid-Tournament Update")
-    st.caption("Pulls live results from ESPN and re-scores surviving teams with tournament bonuses.")
-    update_button = st.button("Fetch and Re-Score", use_container_width=True)
-
-if run_button and uploaded_csv is not None:
-    data_dir = Path("data")
-    data_dir.mkdir(parents=True, exist_ok=True)
-    (data_dir / "teams_input.csv").write_bytes(uploaded_csv.getvalue())
-    if uploaded_bracket is not None:
-        (data_dir / "bracket_input.json").write_bytes(uploaded_bracket.getvalue())
-    try:
-        override_payload = json.loads(override_text)
-        (data_dir / "overrides.json").write_text(json.dumps(override_payload, indent=2), encoding="utf-8")
-    except Exception as exc:
-        st.warning(f"Overrides JSON ignored: {exc}")
-    mode = "full" if uploaded_bracket is not None else "rankings"
-    with st.spinner("Running pipeline..."):
-        ok, log_text = _run_pipeline(mode)
-    if ok:
-        st.success("Analysis completed.")
-    else:
-        st.error("Pipeline failed.")
-        st.code(log_text[-2000:])
-
-if update_button:
-    with st.spinner("Running update mode..."):
-        ok, log_text = _run_pipeline("update")
-    if ok:
-        st.success("Mid-tournament update completed.")
-    else:
-        st.error("Update failed.")
-        st.code(log_text[-2000:])
-
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
     [
         "📊 Power Rankings",
         "📈 Team Traits",
         "🔮 Cinderella Scores",
         "💀 Fraud Alerts",
-        "🏆 Conference Strength",
         "🎯 Matchup Calculator",
         "🎲 Bracket Simulation",
         "📋 Bracket Strategies",
-        "📄 Pick Sheet"
+        "📄 Pick Sheet",
     ]
 )
 
@@ -199,7 +126,7 @@ with tab1:
     st.subheader("Power Rankings")
     power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
     if power_df is None:
-        st.info("Run analysis to generate rankings.")
+        st.info(f"No rankings found. {PIPELINE_HINT}")
     else:
         c1, c2 = st.columns(2)
         with c1:
@@ -218,7 +145,7 @@ with tab2:
     st.subheader("Team Trait Leaderboards")
     power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
     if power_df is None:
-        st.info("Run analysis to generate team trait leaderboards.")
+        st.info(f"No team traits found. {PIPELINE_HINT}")
     else:
         leaderboards = _build_metric_leaderboards(power_df)
         if not leaderboards:
@@ -241,7 +168,7 @@ with tab3:
     cind_df = _read_csv(OUTPUTS / "rankings" / "cinderella_rankings.csv")
     giant_df = _read_csv(OUTPUTS / "rankings" / "giant_killer_rankings.csv")
     if cind_df is None:
-        st.info("Run analysis to generate Cinderella rankings.")
+        st.info(f"No Cinderella rankings found. {PIPELINE_HINT}")
     else:
         st.markdown("**Cinderella table (seeds 9+)**")
         alert = st.selectbox("Alert filter", ["All", "HIGH", "WATCH"])
@@ -253,7 +180,7 @@ with tab3:
     st.divider()
     st.markdown("**Giant killer table (best upset profiles)**")
     if giant_df is None:
-        st.info("Run analysis to generate giant killer rankings.")
+        st.info(f"No giant killer rankings found. {PIPELINE_HINT}")
     else:
         # Giant killer rankings are intentionally restricted to likely upset seeds.
         seed_min, seed_max = st.slider("Giant killer seed range", 6, 16, (8, 13))
@@ -268,27 +195,17 @@ with tab4:
     st.subheader("Fraud Alerts (Seeds 1-6)")
     power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
     if power_df is None or "FraudLevel" not in power_df.columns:
-        st.info("Run analysis to generate fraud alerts.")
+        st.info(f"No fraud alerts found. {PIPELINE_HINT}")
     else:
         fraud = power_df[power_df["FraudLevel"].isin(["HIGH", "MEDIUM", "LOW"])].sort_values("FraudScore", ascending=False)
         st.dataframe(fraud, use_container_width=True, hide_index=True)
 
 with tab5:
-    st.subheader("Conference Strength")
-    conf_df = _read_csv(OUTPUTS / "rankings" / "conference_strength.csv")
-    if conf_df is None:
-        st.info("Run analysis to generate conference strengths.")
-    else:
-        st.dataframe(conf_df, use_container_width=True, hide_index=True)
-        if "Conference" in conf_df.columns and "CSI_multiplier" in conf_df.columns:
-            st.bar_chart(conf_df.set_index("Conference")[["CSI_multiplier"]])
-
-with tab6:
     st.subheader("Matchup Calculator")
     power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
     verdicts_data = _read_json(OUTPUTS / "bracket_matchup_verdicts.json")
     if power_df is None:
-        st.info("Run analysis first.")
+        st.info(f"No matchup data found. {PIPELINE_HINT}")
     else:
         if verdicts_data and verdicts_data.get("matchups"):
             st.markdown("**Round of 64 Matchups**")
@@ -353,7 +270,7 @@ with tab6:
             m3.metric("Predicted spread", f"{fav_name} by {spread_abs:.1f}")
             m4.metric("Pick", f"{fav_name} — {tier}")
 
-with tab7:
+with tab6:
     st.subheader("Monte Carlo Simulation")
     st.caption("Simulate the entire tournament thousands of times to estimate each team's probability of advancing.")
 
@@ -379,9 +296,9 @@ with tab7:
         overrides_path = DATA_DIR / "overrides.json"
 
         if not csv_path.exists():
-            st.error("Missing `data/teams_input.csv`. Upload team stats and run analysis first.")
+            st.error("Missing `data/teams_input.csv`. Prepare inputs and run `python main.py --mode full` first.")
         elif not bracket_path.exists():
-            st.error("Missing `data/bracket_input.json`. Upload bracket JSON and run analysis first.")
+            st.error("Missing `data/bracket_input.json`. Prepare inputs and run `python main.py --mode full` first.")
         else:
             with st.spinner(f"Simulating {n_sims:,} tournaments..."):
                 df = load_teams(str(csv_path), str(overrides_path) if overrides_path.exists() else None)
@@ -429,7 +346,7 @@ with tab7:
             sim_df = sim_df.rename(columns={c: f"{c} %" for c in pct_cols})
         st.dataframe(sim_df, use_container_width=True, hide_index=True)
 
-with tab8:
+with tab7:
     st.subheader("Bracket Strategies")
     summary_payload = _read_json(OUTPUTS / "bracket_summary.json")
 
@@ -517,7 +434,7 @@ with tab8:
                                 f"({g['win_probability']*100:.0f}%)"
                             )
 
-with tab9:
+with tab8:
     st.subheader("Pick Sheet")
     pick_path = OUTPUTS / "my_bracket_picks.txt"
     if not pick_path.exists():

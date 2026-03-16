@@ -12,7 +12,6 @@ import pandas as pd
 
 from engine.bracket_generator import generate_all_brackets, generate_bracket_summary
 from engine.calibration import calibrate_probability, load_calibration_model
-from engine.conference import apply_csi_to_teams, compute_all_conference_ratings
 from engine.ingestion import load_bracket, load_teams
 from engine.live_results import fetch_results
 from engine.normalization import (
@@ -161,10 +160,7 @@ def run_tournament_update(config: dict[str, Any]) -> None:
     df_survivors = df_updated[df_updated["Team"].isin(surviving_teams)].copy()
 
     norms, deriveds = _prepare_norms(df_survivors)
-    conf_ratings = compute_all_conference_ratings(df_survivors)
-    df_survivors = apply_csi_to_teams(df_survivors, conf_ratings)
-    csi_mults = df_survivors["CSI_multiplier"].tolist()
-    rankings = generate_all_rankings(df_survivors, norms, deriveds, csi_mults)
+    rankings = generate_all_rankings(df_survivors, norms, deriveds)
 
     remaining_bracket = build_remaining_bracket(config, completed_games, df_survivors)
     sim_results = simulate_bracket(
@@ -180,7 +176,6 @@ def run_tournament_update(config: dict[str, Any]) -> None:
         sim_results,
         summary,
         config,
-        conf_ratings=conf_ratings,
         all_teams_for_verdicts=df_survivors.to_dict("records"),
         win_prob_fn=production_win_probability
     )
@@ -213,11 +208,7 @@ def main() -> None:
     df = load_teams(config["data_file"], config.get("overrides_file"))
     _apply_coach_scores(df, config.get("coach_scores_file"))
     norms, deriveds = _prepare_norms(df)
-    conf_ratings = compute_all_conference_ratings(df)
-    df = apply_csi_to_teams(df, conf_ratings)
-
-    csi_mults = df["CSI_multiplier"].tolist()
-    rankings = generate_all_rankings(df, norms, deriveds, csi_mults)
+    rankings = generate_all_rankings(df, norms, deriveds)
     _print_terminal_summary(rankings)
 
     if args.mode == "rankings":
@@ -227,7 +218,6 @@ def main() -> None:
             {},
             {},
             config,
-            conf_ratings=conf_ratings,
             all_teams_for_verdicts=df.to_dict("records"),
             win_prob_fn=production_win_probability
         )
@@ -273,7 +263,6 @@ def main() -> None:
         simulation_results,
         summary,
         config,
-        conf_ratings=conf_ratings,
         all_teams_for_verdicts=df.to_dict("records"),
         win_prob_fn=win_prob_fn,
         bracket_input=bracket

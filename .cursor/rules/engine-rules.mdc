@@ -44,10 +44,6 @@ Never use `random.uniform()` for default values. Use fixed constants from `DATA_
 
 Always compute `Luck = WinPct - Barthag` from Torvik data. No external dependency. Fraud Score depends on this (25% weight).
 
-## CSI Is a Residual Correction
-
-Conference strength is already embedded in AdjEM (Torvik's model solves cross-conference comparison simultaneously). The JSON multipliers are a residual correction only — do not double-count.
-
 ## WAB Alias
 
 Torvik sometimes exports as `wAB` instead of `WAB`. Handle in `normalize_aliases()`.

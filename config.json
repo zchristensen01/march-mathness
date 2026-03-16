@@ -1,7 +1,6 @@
 {
   "random_seed": 42,
   "n_simulations": 10000,
-  "apply_conference_adjustment": true,
   "cinderella_min_seed": 9,
   "giant_killer_min_seed": 6,
   "fraud_max_seed": 6,

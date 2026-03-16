@@ -58,14 +58,14 @@ DEFAULTS: dict[str, Any] = {
     "Massey_Rank": 150,
     "Elite_SOS": 10.0,
     "Quad1_Wins": 3,
-    "Avg_Hgt": 77.0,
-    "Eff_Hgt": 79.0,
     "AP_Poll_Rank": 26,
     "Coach_Tourney_Experience": 3.0,
     "Program_Prestige": 2.0,
     "WAB": 2.0,
     "Conf_Tourney_Champion": 0,
     "Won_Play_In": 0,
+    "Exp": 2.0,
+    "Bench_Minutes_Pct": 15.0,
     "OverrideActive": 0
 }
 
@@ -88,7 +88,9 @@ NUMERIC_DEFAULT_COLUMNS: list[str] = [
     "Torvik_Rank",
     "NET_Rank",
     "CompRank",
-    "TRank_Early"
+    "TRank_Early",
+    "Exp",
+    "Bench_Minutes_Pct",
 ]
 
 RANK_SYSTEM_WEIGHTS: dict[str, float] = {
@@ -263,8 +265,12 @@ def apply_overrides(
         mode = str(payload.get("mode", "delta")).lower()
         if mode not in {"delta", "absolute"}:
             raise IngestionError(f"Invalid override mode for '{team_name}': {mode}")
+        adjem_override: float | None = None
         for key, value in payload.items():
             if key in {"mode", "note"}:
+                continue
+            if key == "AdjEM" and isinstance(value, (int, float)):
+                adjem_override = float(value)
                 continue
             if key not in df.columns:
                 continue
@@ -277,6 +283,25 @@ def apply_overrides(
                     df.at[i, key] = float(value)
                 if rank_availability is not None and key in rank_availability:
                     rank_availability[key].iat[i] = True
+
+        # Preserve direct AdjEM overrides by translating them into AdjO/AdjD
+        # shifts before _ensure_adjem() recomputes AdjEM.
+        if adjem_override is not None and "AdjEM" in df.columns:
+            current_adjem = pd.to_numeric(pd.Series([df.at[i, "AdjEM"]]), errors="coerce").iloc[0]
+            base_adjem = 0.0 if pd.isna(current_adjem) else float(current_adjem)
+            target_adjem = base_adjem + adjem_override if mode == "delta" else adjem_override
+            adjem_delta = target_adjem - base_adjem
+
+            if "AdjO" in df.columns and "AdjD" in df.columns:
+                current_adjo = pd.to_numeric(pd.Series([df.at[i, "AdjO"]]), errors="coerce").iloc[0]
+                current_adjd = pd.to_numeric(pd.Series([df.at[i, "AdjD"]]), errors="coerce").iloc[0]
+                base_adjo = 0.0 if pd.isna(current_adjo) else float(current_adjo)
+                base_adjd = 0.0 if pd.isna(current_adjd) else float(current_adjd)
+                # Split the margin delta across both ends to preserve balance.
+                df.at[i, "AdjO"] = base_adjo + (adjem_delta / 2.0)
+                df.at[i, "AdjD"] = base_adjd - (adjem_delta / 2.0)
+            else:
+                df.at[i, "AdjEM"] = target_adjem
         df.at[i, "OverrideActive"] = 1
     # Recompute AdjEM if O/D changed.
     df = _ensure_adjem(df)

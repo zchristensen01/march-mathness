@@ -706,7 +706,7 @@ def merge_all_sources(torvik_df, massey_df,
 
     # Add empty columns for manual data (filled in after bracket announcement)
     for col in ['Seed', 'Quad1_Wins', 'Last_10_Games_Metric',
-                'Elite_SOS', 'Conf_Strength_Weight',
+                'Elite_SOS', 'Exp', 'Bench_Minutes_Pct',
                 'Conf_Tourney_Champion', 'Won_Play_In']:
         if col not in df.columns:
             df[col] = np.nan

@@ -45,7 +45,6 @@ from engine.normalization import (
     normalize_all_teams, compute_consistency_score, compute_volatility_score,
     normalize_value
 )
-from engine.conference import compute_all_conference_ratings, apply_csi_to_teams
 from engine.scoring import generate_all_rankings, seed_mismatch
 
 df = load_teams('data/teams_input.csv')
@@ -102,11 +101,7 @@ for i, (_, row) in enumerate(df.iterrows()):
     if pd.notna(s) and pd.notna(c):
         norms[i]["SeedMismatch_norm"] = normalize_value(seed_mismatch(int(s), int(c)), 0, 1)
 
-conf_ratings = compute_all_conference_ratings(df)
-df = apply_csi_to_teams(df, conf_ratings)
-csi_mults = df['CSI_multiplier'].tolist()
-
-rankings = generate_all_rankings(df, norms, deriveds_list, csi_mults)
+rankings = generate_all_rankings(df, norms, deriveds_list)
 for model_name, rdf in rankings.items():
     score_col = 'PowerScore' if model_name == 'power' else 'ModelScore'
     if score_col in rdf.columns:

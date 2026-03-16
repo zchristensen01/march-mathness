@@ -1,6 +1,7 @@
-# March Mathness: Current Math + Algorithm Dataflow (Code-Accurate)
+# March Mathness: Legacy App Math + Dataflow (Archived)
 
-This document describes the **current implementation** in this repo as of now, including exact data inputs, scoring math, model weights, bracket simulation logic, and generated outputs. It is intentionally code-faithful (including quirks) so you can compare against your next plan.
+This document describes the **previous JavaScript app** and is retained for historical reference only.
+For the active implementation, use `new_instructions.md`, `documentation/ALGORITHM.md`, and `documentation/DATA_SCHEMA.md`.
 
 ---
 

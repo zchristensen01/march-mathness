@@ -449,6 +449,8 @@ def merge_all_sources(
         "Conf_Tourney_Champion", "Won_Play_In",
         "Star_Player_Index",
         "Elite_SOS",
+        "Exp",
+        "Bench_Minutes_Pct",
     ]
     for col in PLACEHOLDER_COLUMNS:
         if col not in df.columns:
@@ -468,7 +470,8 @@ def merge_all_sources(
         "Star_Player_Index",
         "Coach_Tourney_Experience", "Program_Prestige",
         "Quad1_Wins", "Last_10_Games_Metric",
-        "Conf_Strength_Weight", "Conf_Tourney_Champion", "Won_Play_In",
+        "Conf_Tourney_Champion", "Won_Play_In",
+        "Exp", "Bench_Minutes_Pct",
     ]
     keep = [c for c in SCHEMA_COLUMNS if c in df.columns]
     return df[keep]

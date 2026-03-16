@@ -1,5 +1,8 @@
-# March Mathness — Implementation Guide
+# March Mathness — Implementation Guide (Archived Reference)
 **Version 3.1** — All data sources free ($0/year). Cloudscraper required for Torvik/Massey. Luck computed from Torvik data. No paid subscriptions needed.
+
+> **Current-state override (2026-03):** Use `new_instructions.md`, `documentation/ALGORITHM.md`, and `documentation/DATA_SCHEMA.md` as the active implementation contract.  
+> **Important:** This file is preserved as a historical build playbook. Any section that mentions CSI, conference multipliers, conference tabs, or `apply_conference_adjustment` is obsolete and non-operational for the current codebase.
 
 **Total build time:** ~20 hours  
 **Stack:** Python 3.11 + Streamlit (or static HTML via Jinja2)  
@@ -55,7 +58,6 @@ echo "data/teams_input*.csv" >> .gitignore
 {
   "random_seed": 42,
   "n_simulations": 10000,
-  "apply_conference_adjustment": true,
   "cinderella_min_seed": 9,
   "giant_killer_min_seed": 6,
   "fraud_max_seed": 6,
@@ -186,11 +188,11 @@ assert normalize_value(None, 0, 100) == 0.5   # NaN → neutral
 
 ---
 
-## Hour 5: Conference Module
+## Hour 5: Conference Module (Archived / Not Used)
 
-**File:** `engine/conference.py`
+**File:** `engine/conference.py` (legacy; not part of the active scoring pipeline)
 
-1. Load conference multipliers from `models/conference_weights.json`.
+1. Legacy reference only. Do not add conference multipliers to active scoring.
 
 2. `win50_rating(adjems: list[float]) -> float` — uses `scipy.optimize.brentq`. Finds rating R where a team with R would go exactly .500 in a round-robin of the conference. Full implementation in `ALGORITHM.md` Section 1.1.
 

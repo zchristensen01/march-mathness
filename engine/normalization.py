@@ -27,13 +27,10 @@ FEATURE_RANGES: dict[str, tuple[float, float, str]] = {
     "2P_%_D": (40, 58, "inverse"),
     "3P_Rate": (25, 55, "neutral"),
     "3P_Rate_D": (28, 52, "inverse"),
-    "AST_TO": (0.8, 2.5, "higher"),
     "Ast_%": (38, 70, "higher"),
     "Op_Ast_%": (35, 65, "inverse"),
     "Blk_%": (4, 20, "higher"),
     "Blked_%": (2, 14, "inverse"),
-    "Avg_Hgt": (73, 81, "higher"),
-    "Eff_Hgt": (75, 84, "higher"),
     "SOS": (1, 365, "inverse"),
     "CompRank": (1, 365, "inverse"),
     "Torvik_Rank": (1, 365, "inverse"),
@@ -49,7 +46,9 @@ FEATURE_RANGES: dict[str, tuple[float, float, str]] = {
     "RankTrajectory": (-30, 30, "higher"),
     "WinPct": (0, 1, "higher"),
     "Coach_Tourney_Experience": (1, 10, "higher"),
-    "WAB": (-13, 14, "higher")
+    "WAB": (-13, 14, "higher"),
+    "Exp": (0.5, 3.0, "higher"),
+    "Bench_Minutes_Pct": (5, 30, "neutral"),
 }
 
 

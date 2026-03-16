@@ -1,5 +1,7 @@
 # March Mathness — Product Requirements Document (PRD)
 
+> **Current-state override (2026-03):** For scoring behavior and schema, follow `new_instructions.md`, `documentation/ALGORITHM.md`, and `documentation/DATA_SCHEMA.md`. Any PRD details that conflict are superseded.
+
 **Version:** 2.0  
 **Status:** Approved for build  
 **Target build time:** ~20 hours solo in Cursor  
@@ -54,15 +56,15 @@ There is no authentication, no database, no multi-tenancy. Single user, local or
 - Support manual override JSON file (`overrides.json`) to adjust specific team stats (e.g., injury adjustments)
 - Re-run the full analysis pipeline on demand after data or override changes
 
-### F2 — Conference Strength Index (CSI)
-- Compute a Conference Strength Index for all conferences present in the data
-- Use WIN50 method: find rating R where a team with rating R would go .500 in round-robin of the conference
-- Output a ranked Conference Strength Table
+### F2 — Efficiency-First Scoring (No CSI Multiplier)
+- Do not apply conference-strength multipliers to model scores
+- Treat conference adjustments as obsolete in this product version
+- Use only team-level metrics from `teams_input.csv` plus normalized/derived features
 
 ### F3 — Composite Power Score
 - For each team, compute a single composite power score using research-validated weights
 - Score is derived from 12 weighted sub-components (see Algorithm doc)
-- Apply CSI multiplier to adjust for conference quality
+- No conference multiplier step is applied
 - Output a Power Rankings table (all teams, sorted by power score)
 
 ### F4 — Six Ranked Output Tables
@@ -106,7 +108,7 @@ Each table includes: Rank, Team, Seed, Conference, Score, Key Strengths (plain-l
 
 ### F9 — Dashboard UI
 - Single-page HTML dashboard (or Streamlit app)
-- Sections: Power Rankings, Cinderella Scores, Conference Strength, Bracket Simulation Results
+- Sections: Power Rankings, Team Traits, Cinderella Scores, Fraud Alerts, Matchup Calculator, Bracket Simulation, Bracket Strategies, Pick Sheet
 - Each bracket strategy viewable as an interactive bracket diagram
 - Color coding: green (dominant favorite), yellow (toss-up), red (likely upset)
 
@@ -126,7 +128,7 @@ Each table includes: Rank, Team, Seed, Conference, Score, Key Strengths (plain-l
         ↓
   [Feature Engineering & Normalization]
         ↓
-  [Conference Strength Index]
+  [Multi-Model Scoring Engine]
         ↓
   [Multi-Model Scoring Engine]
   ┌─────┬────────┬────────┬──────────┬──────────┬────────────┐
@@ -177,7 +179,6 @@ Each table includes: Rank, Team, Seed, Conference, Score, Key Strengths (plain-l
 | `offensive_rankings.csv` | CSV | Every run |
 | `momentum_rankings.csv` | CSV | Every run |
 | `giant_killer_rankings.csv` | CSV | Every run |
-| `conference_strength.csv` | CSV | Every run |
 | `matchup_probabilities.csv` | CSV | Post-bracket only |
 | `bracket_[strategy].json` | JSON | Post-bracket only |
 | `bracket_[strategy].html` | HTML | Post-bracket only |
@@ -203,7 +204,6 @@ Each table includes: Rank, Team, Seed, Conference, Score, Key Strengths (plain-l
 {
   "random_seed": 42,
   "n_simulations": 10000,
-  "apply_conference_adjustment": true,
   "cinderella_min_seed": 9,
   "giant_killer_min_seed": 6,
   "fraud_max_seed": 6,
