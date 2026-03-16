@@ -14,6 +14,7 @@ from engine.bracket_generator import generate_all_brackets, generate_bracket_sum
 from engine.calibration import calibrate_probability, load_calibration_model
 from engine.ingestion import load_bracket, load_teams
 from engine.live_results import fetch_results
+from engine.matchup_paths import generate_matchup_paths
 from engine.normalization import (
     compute_consistency_score,
     compute_derived_features,
@@ -22,7 +23,7 @@ from engine.normalization import (
     normalize_value
 )
 from engine.output import write_all_outputs
-from engine.scoring import generate_all_rankings, seed_mismatch
+from engine.scoring import RANKING_KEY_TO_MODEL, generate_all_rankings, seed_mismatch
 from engine.simulation import generate_modal_bracket, simulate_bracket
 from engine.tournament_bonus import apply_tournament_bonuses, build_remaining_bracket
 from engine.win_probability import production_win_probability
@@ -89,8 +90,9 @@ def _print_terminal_summary(rankings: dict[str, pd.DataFrame]) -> None:
             f"AdjEM:+{float(row.get('AdjEM', 0)):.1f}"
         )
 
-    if "CinderellaAlertLevel" in power.columns:
-        high = power[power["CinderellaAlertLevel"] == "HIGH"]
+    cinderella_df = rankings.get("cinderella")
+    if cinderella_df is not None and "CinderellaAlertLevel" in cinderella_df.columns:
+        high = cinderella_df[cinderella_df["CinderellaAlertLevel"] == "HIGH"].sort_values("CinderellaScore", ascending=False)
         if not high.empty:
             print("\n🔴 CINDERELLA ALERTS (HIGH)")
             print("-" * 67)
@@ -110,6 +112,41 @@ def _print_terminal_summary(rankings: dict[str, pd.DataFrame]) -> None:
                     f"{row.get('Team', ''):<24} #{int(row.get('Seed', 0)):<2} "
                     f"Fraud:{float(row.get('FraudScore', 0)):.3f} [{row.get('FraudLevel', '')}]"
                 )
+
+
+_SCORING_COLUMNS = [
+    "PowerScore", "FraudScore", "FraudLevel", "FraudExplanation",
+    "CinderellaScore", "CinderellaAlertLevel",
+    "Consistency_Score", "Volatility_Score", "RankDivergence",
+]
+
+
+def _enrich_teams_from_rankings(
+    df: pd.DataFrame,
+    rankings: dict[str, pd.DataFrame],
+) -> None:
+    """Merge scoring columns from the power ranking back into df in-place.
+
+    Without this, team dicts used for bracket generation, simulation,
+    and matchup verdicts lack FraudScore, CinderellaScore, etc.
+    """
+    power = rankings.get("power")
+    if power is None:
+        return
+    score_lookup: dict[str, dict[str, Any]] = {}
+    for _, row in power.iterrows():
+        team = str(row.get("Team", ""))
+        score_lookup[team] = {
+            col: row[col] for col in _SCORING_COLUMNS if col in power.columns
+        }
+    for col in _SCORING_COLUMNS:
+        if col not in df.columns:
+            df[col] = None
+    for idx, row in df.iterrows():
+        team = str(row["Team"])
+        if team in score_lookup:
+            for col, val in score_lookup[team].items():
+                df.at[idx, col] = val
 
 
 def _build_team_lookup(df: pd.DataFrame) -> dict[str, dict[str, Any]]:
@@ -161,6 +198,7 @@ def run_tournament_update(config: dict[str, Any]) -> None:
 
     norms, deriveds = _prepare_norms(df_survivors)
     rankings = generate_all_rankings(df_survivors, norms, deriveds)
+    _enrich_teams_from_rankings(df_survivors, rankings)
 
     remaining_bracket = build_remaining_bracket(config, completed_games, df_survivors)
     sim_results = simulate_bracket(
@@ -209,6 +247,7 @@ def main() -> None:
     _apply_coach_scores(df, config.get("coach_scores_file"))
     norms, deriveds = _prepare_norms(df)
     rankings = generate_all_rankings(df, norms, deriveds)
+    _enrich_teams_from_rankings(df, rankings)
     _print_terminal_summary(rankings)
 
     if args.mode == "rankings":
@@ -246,16 +285,25 @@ def main() -> None:
     modal = generate_modal_bracket(simulation_results, bracket_with_stats, win_prob_fn)
 
     model_scores: dict[str, dict[str, float]] = {}
-    for model_name, rdf in rankings.items():
-        score_col = "PowerScore" if model_name == "power" else "ModelScore"
+    for ranking_key, rdf in rankings.items():
+        score_col = "PowerScore" if ranking_key == "power" else "ModelScore"
+        scoring_model = RANKING_KEY_TO_MODEL.get(ranking_key, ranking_key)
         for _, row in rdf.iterrows():
             team = str(row["Team"])
+            score = float(row.get(score_col, row.get("PowerScore", 50.0)))
             model_scores.setdefault(team, {})
-            model_scores[team][model_name] = float(row.get(score_col, row.get("PowerScore", 50.0)))
+            model_scores[team][scoring_model] = score
 
     all_brackets = generate_all_brackets(bracket_with_stats, model_scores, simulation_results, win_prob_fn)
     summary = generate_bracket_summary(all_brackets)
     summary["modal_bracket"] = modal
+    matchup_paths = generate_matchup_paths(
+        bracket_with_stats,
+        simulation_results,
+        win_prob_fn,
+        rankings["power"],
+        top_n=20,
+    )
 
     write_all_outputs(
         rankings,
@@ -265,7 +313,8 @@ def main() -> None:
         config,
         all_teams_for_verdicts=df.to_dict("records"),
         win_prob_fn=win_prob_fn,
-        bracket_input=bracket
+        bracket_input=bracket,
+        matchup_paths=matchup_paths,
     )
 
     print(f"\n✅ Complete in {time.time() - t0:.1f}s")

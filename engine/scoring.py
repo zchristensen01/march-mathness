@@ -466,6 +466,18 @@ def generate_ranking(
     return work[cols + extra_cols]
 
 
+RANKING_KEY_TO_MODEL: dict[str, str] = {
+    "power": "default",
+    "defensive": "defensive",
+    "offensive": "offensive",
+    "momentum": "momentum",
+    "cinderella": "cinderella_tournament",
+    "giant_killer": "giant_killer",
+    "favorites": "favorites",
+    "analytics": "analytics",
+}
+
+
 def generate_all_rankings(
     df: pd.DataFrame,
     norms: list[dict[str, float]],
@@ -479,6 +491,8 @@ def generate_all_rankings(
     rankings["momentum"] = generate_ranking(df, norms, deriveds, "momentum")
     rankings["cinderella"] = generate_ranking(df, norms, deriveds, "cinderella_tournament", min_seed=9)
     rankings["giant_killer"] = generate_ranking(df, norms, deriveds, "giant_killer", min_seed=6)
+    rankings["favorites"] = generate_ranking(df, norms, deriveds, "favorites")
+    rankings["analytics"] = generate_ranking(df, norms, deriveds, "analytics")
     return rankings
 
 

@@ -94,7 +94,7 @@ def win_probability(team_a: dict[str, Any], team_b: dict[str, Any], game_std: fl
 
 def win_probability_elo_style(team_a: dict[str, Any], team_b: dict[str, Any]) -> float:
     """FiveThirtyEight-style Elo logistic mapping from AdjEM difference."""
-    diff = float(team_a.get("AdjEM", 0.0)) - float(team_b.get("AdjEM", 0.0))
+    diff = _as_float(team_a.get("AdjEM", 0.0), 0.0) - _as_float(team_b.get("AdjEM", 0.0), 0.0)
     prob = 1.0 / (1.0 + 10 ** (-diff * 30.464 / 400.0))
     return _clip_probability(float(prob))
 

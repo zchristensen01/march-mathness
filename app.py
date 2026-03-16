@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from html import escape
 from pathlib import Path
 
 import pandas as pd
@@ -21,6 +22,19 @@ st.set_page_config(
 OUTPUTS = Path("outputs")
 DATA_DIR = Path("data")
 PIPELINE_HINT = "Generate outputs first with `python main.py --mode full` (or `--mode rankings`)."
+ROUND_ORDER = ["R64", "R32", "S16", "E8"]
+ROUND_WEIGHTS = {"R64": 1.0, "R32": 2.0, "S16": 3.0, "E8": 4.0}
+ROUND_URGENCY = {"R64": 4.0, "R32": 3.0, "S16": 2.0, "E8": 1.0}
+ROUND_POINTS = {"R64": 1, "R32": 2, "S16": 4, "E8": 8, "F4": 16, "Championship": 32}
+ROUND_WIN_KEY = {
+    "R64": "R32",
+    "R32": "S16",
+    "S16": "E8",
+    "E8": "F4",
+    "F4": "Championship",
+    "Championship": "Champion",
+}
+PATH_ROUND_ORDER = ["R64", "R32", "S16", "E8", "F4", "Championship"]
 
 
 def _build_metric_leaderboards(power_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -107,9 +121,230 @@ def _read_json(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _branch_action(prob: float) -> tuple[str, str, str]:
+    """Map winner probability to lock/branch action and portfolio split."""
+    if prob >= 0.85:
+        return "LOCK", "100/0", "Very high confidence"
+    if prob >= 0.72:
+        return "LEAN", "85/15", "Strong edge, tiny hedge only"
+    if prob >= 0.60:
+        return "BRANCH", "70/30", "Meaningful upset risk"
+    if prob >= 0.55:
+        return "BRANCH", "60/40", "Near coin flip"
+    return "BRANCH", "55/45", "True toss-up"
+
+
+def _build_team_influence(
+    sim_payload: dict | None,
+    power_df: pd.DataFrame | None,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Compute team influence and expected tournament points from simulation + power rank."""
+    sim_points: dict[str, float] = {}
+    if sim_payload:
+        sim_results = sim_payload.get("results", {})
+        if isinstance(sim_results, dict):
+            for team, rounds in sim_results.items():
+                if not isinstance(rounds, dict):
+                    continue
+                expected_points = (
+                    ROUND_POINTS["R64"] * float(rounds.get("R32", 0.0))
+                    + ROUND_POINTS["R32"] * float(rounds.get("S16", 0.0))
+                    + ROUND_POINTS["S16"] * float(rounds.get("E8", 0.0))
+                    + ROUND_POINTS["E8"] * float(rounds.get("F4", 0.0))
+                    + ROUND_POINTS["F4"] * float(rounds.get("Championship", 0.0))
+                    + ROUND_POINTS["Championship"] * float(rounds.get("Champion", 0.0))
+                )
+                sim_points[str(team)] = float(expected_points)
+
+    sim_max = max(sim_points.values()) if sim_points else 0.0
+    sim_norm = {
+        team: (points / sim_max if sim_max > 0 else 0.0)
+        for team, points in sim_points.items()
+    }
+
+    power_norm: dict[str, float] = {}
+    if power_df is not None and not power_df.empty and "Team" in power_df.columns:
+        rank_col = "Rank" if "Rank" in power_df.columns else None
+        if rank_col:
+            ranked = power_df[["Team", rank_col]].copy()
+            ranked[rank_col] = pd.to_numeric(ranked[rank_col], errors="coerce")
+            ranked = ranked.dropna(subset=[rank_col])
+            if not ranked.empty:
+                max_rank = float(ranked[rank_col].max())
+                min_rank = float(ranked[rank_col].min())
+                span = max(1.0, max_rank - min_rank)
+                for _, row in ranked.iterrows():
+                    team = str(row["Team"])
+                    rank = float(row[rank_col])
+                    power_norm[team] = 1.0 - ((rank - min_rank) / span)
+
+    teams = set(sim_norm.keys()) | set(power_norm.keys())
+    influence: dict[str, float] = {}
+    for team in teams:
+        influence[team] = 0.7 * float(sim_norm.get(team, 0.0)) + 0.3 * float(power_norm.get(team, 0.0))
+
+    return influence, sim_points
+
+
+def _remaining_expected_points(round_name: str, team: str, sim_payload: dict | None) -> float:
+    """Expected remaining bracket points for picking a team from this round onward."""
+    if not sim_payload:
+        return 0.0
+    sim_results = sim_payload.get("results", {})
+    if not isinstance(sim_results, dict) or team not in sim_results:
+        return 0.0
+    rounds = sim_results.get(team, {})
+    if not isinstance(rounds, dict):
+        return 0.0
+
+    order = ["R64", "R32", "S16", "E8", "F4", "Championship"]
+    if round_name not in order:
+        return 0.0
+    start_idx = order.index(round_name)
+    expected = 0.0
+    for r in order[start_idx:]:
+        next_key = ROUND_WIN_KEY[r]
+        expected += ROUND_POINTS[r] * float(rounds.get(next_key, 0.0))
+    return float(expected)
+
+
+def _build_branch_plan_df(
+    summary_payload: dict | None,
+    sim_payload: dict | None,
+    power_df: pd.DataFrame | None,
+) -> pd.DataFrame:
+    """Build branch-priority table focused on early exits for influential teams."""
+    if not summary_payload:
+        return pd.DataFrame()
+    regions = summary_payload.get("modal_bracket", {}).get("regions", {})
+    if not isinstance(regions, dict):
+        return pd.DataFrame()
+    influence_map, sim_points_map = _build_team_influence(sim_payload, power_df)
+
+    rows: list[dict[str, object]] = []
+    for region, rounds in regions.items():
+        if not isinstance(rounds, dict):
+            continue
+        for round_name, games in rounds.items():
+            if round_name not in ROUND_WEIGHTS or not isinstance(games, list):
+                continue
+            for game in games:
+                team_a = str(game.get("team_a", ""))
+                team_b = str(game.get("team_b", ""))
+                winner = str(game.get("winner", ""))
+                prob = float(game.get("prob", 0.5))
+                if not team_a or not team_b or not winner:
+                    continue
+
+                other_team = team_b if winner == team_a else team_a
+                uncertainty = 1.0 - abs(prob - 0.5) / 0.5
+                upset_prob = 1.0 - prob
+                influence_primary = float(influence_map.get(winner, 0.0))
+                influence_counter = float(influence_map.get(other_team, 0.0))
+                remaining_points = _remaining_expected_points(round_name, winner, sim_payload)
+                # Root objective: early high-impact elimination risk for influential teams.
+                impact_score = upset_prob * max(0.1, influence_primary) * remaining_points * ROUND_URGENCY[round_name]
+                branch_score = impact_score + (uncertainty * 0.75) + (influence_counter * 0.5)
+                action, split, note = _branch_action(prob)
+                rows.append(
+                    {
+                        "Round": round_name,
+                        "Region": region,
+                        "Matchup": f"{team_a} vs {team_b}",
+                        "Primary Pick": winner,
+                        "Counter Pick": other_team,
+                        "Primary Win %": round(prob * 100, 1),
+                        "Counter Win %": round((1.0 - prob) * 100, 1),
+                        "Action": action,
+                        "Recommended Split": split,
+                        "Branch Score": round(branch_score, 2),
+                        "Expected Pts Team": round(float(sim_points_map.get(winner, 0.0)), 2),
+                        "Pts At Risk": round(impact_score, 2),
+                        "Reason": note + "; early exit risk weighted",
+                    }
+                )
+
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    round_rank = {name: idx for idx, name in enumerate(ROUND_ORDER)}
+    df["round_rank"] = df["Round"].map(round_rank).fillna(99)
+    df = df.sort_values(by=["Branch Score", "round_rank"], ascending=[False, True]).drop(columns=["round_rank"])
+    df.insert(0, "Priority", range(1, len(df) + 1))
+    return df
+
+
+def _branch_table_html(df: pd.DataFrame) -> str:
+    """Render branch plan as an HTML table for quick scanning."""
+    if df.empty:
+        return "<p>No branch-plan rows available.</p>"
+
+    color_map = {
+        "LOCK": "#1a7f37",
+        "LEAN": "#2da44e",
+        "BRANCH": "#f59e0b",
+    }
+    header = (
+        "<thead><tr>"
+        "<th>Priority</th><th>Round</th><th>Region</th><th>Matchup</th>"
+        "<th>Primary</th><th>Primary %</th><th>Counter</th><th>Counter %</th>"
+        "<th>Action</th><th>Split</th><th>Score</th><th>Pts@Risk</th><th>ExpPts(Primary)</th><th>Reason</th>"
+        "</tr></thead>"
+    )
+
+    body_rows: list[str] = []
+    for _, row in df.iterrows():
+        action = str(row["Action"])
+        action_color = color_map.get(action, "#64748b")
+        body_rows.append(
+            "<tr>"
+            f"<td>{int(row['Priority'])}</td>"
+            f"<td>{escape(str(row['Round']))}</td>"
+            f"<td>{escape(str(row['Region']))}</td>"
+            f"<td>{escape(str(row['Matchup']))}</td>"
+            f"<td><strong>{escape(str(row['Primary Pick']))}</strong></td>"
+            f"<td>{float(row['Primary Win %']):.1f}%</td>"
+            f"<td>{escape(str(row['Counter Pick']))}</td>"
+            f"<td>{float(row['Counter Win %']):.1f}%</td>"
+            f"<td><span style='color:{action_color};font-weight:700'>{escape(action)}</span></td>"
+            f"<td>{escape(str(row['Recommended Split']))}</td>"
+            f"<td>{float(row['Branch Score']):.2f}</td>"
+            f"<td>{float(row['Pts At Risk']):.2f}</td>"
+            f"<td>{float(row['Expected Pts Team']):.2f}</td>"
+            f"<td>{escape(str(row['Reason']))}</td>"
+            "</tr>"
+        )
+
+    styles = """
+    <style>
+      .branch-wrap { overflow-x: auto; border: 1px solid #334155; border-radius: 10px; }
+      .branch-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+      .branch-table th, .branch-table td { padding: 8px 10px; border-bottom: 1px solid #334155; text-align: left; white-space: nowrap; }
+      .branch-table thead th { position: sticky; top: 0; background: #0f172a; color: #e2e8f0; z-index: 1; }
+      .branch-table tbody tr:nth-child(even) { background: #111827; }
+      .branch-table tbody tr:nth-child(odd) { background: #0b1220; }
+    </style>
+    """
+    table = (
+        f"{styles}<div class='branch-wrap'><table class='branch-table'>"
+        f"{header}<tbody>{''.join(body_rows)}</tbody></table></div>"
+    )
+    return table
+
+
+def _difficulty_info(win_prob: float) -> tuple[str, str]:
+    """Map team win probability to difficulty label and color."""
+    if win_prob >= 0.75:
+        return "Favorable", "#1a7f37"
+    if win_prob >= 0.55:
+        return "Competitive", "#f59e0b"
+    return "Tough", "#ef4444"
+
+
 st.title("🏀 March Mathness - Tournament Prediction Engine")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(
     [
         "📊 Power Rankings",
         "📈 Team Traits",
@@ -118,7 +353,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
         "🎯 Matchup Calculator",
         "🎲 Bracket Simulation",
         "📋 Bracket Strategies",
-        "📄 Pick Sheet",
+        "🌿 Branching Plan",
+        "🛣️ Tournament Paths",
     ]
 )
 
@@ -172,9 +408,29 @@ with tab3:
     else:
         st.markdown("**Cinderella table (seeds 9+)**")
         alert = st.selectbox("Alert filter", ["All", "HIGH", "WATCH"])
-        view = cind_df
+        view = cind_df.copy()
         if alert != "All" and "CinderellaAlertLevel" in view.columns:
             view = view[view["CinderellaAlertLevel"] == alert]
+        # Use the same 0-1 CinderellaScore shown in terminal alerts to avoid
+        # mixing it with the model ranking score scale (~0-100).
+        if "CinderellaScore" in view.columns:
+            view = view.sort_values("CinderellaScore", ascending=False)
+        display_cols = [
+            "Rank",
+            "Team",
+            "Seed",
+            "Conference",
+            "Record",
+            "CinderellaScore",
+            "CinderellaAlertLevel",
+            "PowerScore",
+            "ModelScore",
+            "AdjEM",
+            "MomentumDelta",
+        ]
+        present_cols = [col for col in display_cols if col in view.columns]
+        if present_cols:
+            view = view[present_cols]
         st.dataframe(view, use_container_width=True, hide_index=True)
 
     st.divider()
@@ -435,12 +691,108 @@ with tab7:
                             )
 
 with tab8:
-    st.subheader("Pick Sheet")
-    pick_path = OUTPUTS / "my_bracket_picks.txt"
-    if not pick_path.exists():
-        st.info("Run full analysis to generate pick sheet.")
-    else:
-        content = pick_path.read_text(encoding="utf-8")
-        st.code(content)
-        st.download_button("Download Pick Sheet", content, "march_mathness_picks.txt", "text/plain")
+    st.subheader("Branching Plan (Locks vs Splits)")
+    st.caption(
+        "Use this as your multi-entry map: keep LOCK games identical across brackets, "
+        "then split only at high-priority BRANCH nodes."
+    )
 
+    summary_payload = _read_json(OUTPUTS / "bracket_summary.json")
+    sim_payload = _read_json(OUTPUTS / "simulation_results.json")
+    power_df = _read_csv(OUTPUTS / "rankings" / "power_rankings.csv")
+    if summary_payload is None:
+        st.info(f"No branch data found. {PIPELINE_HINT}")
+    else:
+        branch_df = _build_branch_plan_df(summary_payload, sim_payload, power_df)
+        if branch_df.empty:
+            st.info("No branchable games found in the modal bracket path.")
+        else:
+            c1, c2 = st.columns([2, 2])
+            with c1:
+                include_locks = st.checkbox("Include LOCK rows", value=True)
+            with c2:
+                min_score = st.slider("Minimum branch score", 0.0, 4.0, 1.0, 0.1)
+
+            view = branch_df.copy()
+            if not include_locks:
+                view = view[view["Action"] != "LOCK"]
+            view = view[view["Branch Score"] >= min_score]
+
+            st.markdown(_branch_table_html(view), unsafe_allow_html=True)
+            st.download_button(
+                "Download branch plan (HTML)",
+                data=_branch_table_html(view),
+                file_name="branching_plan.html",
+                mime="text/html",
+            )
+
+with tab9:
+    st.subheader("Tournament Path Matchups (Top 20 Teams)")
+    st.caption(
+        "For each top-20 power team, this shows all possible opponents by round in its bracket path. "
+        "Final Four and Championship are capped to the 6 most likely opponents."
+    )
+    path_payload = _read_json(OUTPUTS / "matchup_paths" / "team_paths.json")
+    if path_payload is None:
+        st.info(f"No tournament path output found. {PIPELINE_HINT}")
+    else:
+        team_paths = path_payload.get("team_paths", {})
+        if not isinstance(team_paths, dict) or not team_paths:
+            st.info("Tournament path file is empty. Run `python main.py --mode full` to regenerate.")
+        else:
+            team_names = sorted(
+                team_paths.keys(),
+                key=lambda name: (
+                    int(team_paths.get(name, {}).get("power_rank") or 999),
+                    name,
+                ),
+            )
+            selected_team = st.selectbox("Select team", team_names)
+            selected_payload = team_paths.get(selected_team, {})
+            rank_val = selected_payload.get("power_rank")
+            seed_val = selected_payload.get("seed")
+            region_val = selected_payload.get("region")
+            slot_val = selected_payload.get("slot")
+            st.markdown(
+                f"**{selected_team}**  |  Rank: **{rank_val}**  |  Seed: **{seed_val}**  |  "
+                f"Region: **{region_val}**  |  Slot: **{slot_val}**"
+            )
+
+            rounds = selected_payload.get("rounds", {})
+            for round_name in PATH_ROUND_ORDER:
+                st.markdown(f"#### {round_name}")
+                if round_name in {"F4", "Championship"}:
+                    st.caption("Showing top 6 most likely opponents by meeting probability.")
+                rows = rounds.get(round_name, [])
+                if not rows:
+                    st.write("No valid opponents found for this round.")
+                    continue
+
+                table_rows: list[dict[str, object]] = []
+                for row in rows:
+                    win_prob = float(row.get("win_prob", 0.0))
+                    meet_prob = float(row.get("meeting_prob", 0.0))
+                    difficulty, _ = _difficulty_info(win_prob)
+                    table_rows.append(
+                        {
+                            "Opponent": row.get("team", ""),
+                            "Seed": int(row.get("seed", 16)),
+                            "Win Prob %": round(win_prob * 100, 1),
+                            "Meeting Prob %": round(meet_prob * 100, 2),
+                            "Power Rank": row.get("power_rank", ""),
+                            "AdjEM": row.get("adjEM", 0.0),
+                            "Difficulty": difficulty,
+                        }
+                    )
+
+                table_df = pd.DataFrame(table_rows)
+
+                def _style_row(r: pd.Series) -> list[str]:
+                    _, color = _difficulty_info(float(r.get("Win Prob %", 0.0)) / 100.0)
+                    return [f"background-color: {color}22" if c == "Difficulty" else "" for c in r.index]
+
+                st.dataframe(
+                    table_df.style.apply(_style_row, axis=1),
+                    use_container_width=True,
+                    hide_index=True,
+                )

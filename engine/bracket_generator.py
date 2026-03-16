@@ -7,7 +7,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from engine import FIRST_ROUND_MATCHUPS
+from engine import FIRST_ROUND_MATCHUPS, order_final_four_regions
 from engine.scoring import load_strategy_configs
 from engine.win_probability import apply_fraud_adjustment
 
@@ -23,7 +23,14 @@ def strategy_win_prob(
     model_scores: dict[str, dict[str, float]],
     base_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float]
 ) -> float:
-    """Calculate strategy-adjusted probability that team_a wins."""
+    """Calculate strategy-adjusted probability that team_a wins.
+
+    Adds a model-score ratio adjustment (±20% max) on top of the
+    AdjEM-based win probability. The ratio measures which team the
+    strategy's blended model prefers; the ±20% cap keeps extreme
+    seed mismatches safe while giving strategies real influence over
+    outcomes across multiple bracket rounds.
+    """
     base_prob = float(base_prob_fn(team_a, team_b))
     blends = strategy.get("model_blends", {})
 
@@ -33,17 +40,23 @@ def strategy_win_prob(
     score_b = sum(float(weight) * float(model_scores.get(name_b, {}).get(model, 50.0)) for model, weight in blends.items())
 
     if score_a + score_b > 0:
-        ratio_adj = (score_a / (score_a + score_b) - 0.5) * 0.20
-        ratio_adj = float(np.clip(ratio_adj, -0.10, 0.10))
+        ratio_adj = (score_a / (score_a + score_b) - 0.5) * 1.0
+        ratio_adj = float(np.clip(ratio_adj, -0.20, 0.20))
     else:
         ratio_adj = 0.0
 
     adjusted = float(np.clip(base_prob + ratio_adj, 0.03, 0.97))
 
     if "cinderella_boost" in strategy:
-        cinderella_b = float(team_b.get("CinderellaScore") or 0.0)
-        if cinderella_b > 0.50 and int(team_b.get("Seed", 16)) > int(team_a.get("Seed", 1)):
-            adjusted = float(np.clip(adjusted - float(strategy["cinderella_boost"]), 0.03, 0.97))
+        boost = float(strategy["cinderella_boost"])
+        seed_a = int(team_a.get("Seed", 16))
+        seed_b = int(team_b.get("Seed", 16))
+        cind_a = float(team_a.get("CinderellaScore") or 0.0)
+        cind_b = float(team_b.get("CinderellaScore") or 0.0)
+        if cind_b > 0.50 and seed_b > seed_a:
+            adjusted = float(np.clip(adjusted - boost, 0.03, 0.97))
+        elif cind_a > 0.50 and seed_a > seed_b:
+            adjusted = float(np.clip(adjusted + boost, 0.03, 0.97))
 
     favorite = team_a if int(team_a.get("Seed", 16)) <= int(team_b.get("Seed", 16)) else team_b
     if _team_name(favorite) == _team_name(team_a):
@@ -68,12 +81,7 @@ def simulate_matchup_strategy(
 
     threshold = float(strategy.get("upset_threshold", 0.4))
     is_upset = (1.0 - fav_prob) > threshold
-    strategy_name = str(strategy.get("name", "standard"))
-    if (
-        int(underdog.get("Seed", 16)) == 16
-        and int(favorite.get("Seed", 1)) == 1
-        and float(strategy.get("upset_threshold", 0)) > 0.35
-    ):
+    if int(underdog.get("Seed", 16)) == 16 and int(favorite.get("Seed", 1)) == 1:
         is_upset = False
 
     winner = underdog if is_upset else favorite
@@ -126,7 +134,9 @@ def generate_bracket(
     """Generate full deterministic bracket for one strategy."""
     strategy = {**strategy_config, "name": strategy_name}
     rounds: dict[str, dict[str, list[dict[str, Any]]]] = {}
-    region_winners: list[dict[str, Any]] = []
+    region_winners: dict[str, dict[str, Any]] = {}
+    region_order = list(teams_by_region.keys())
+    final_four_regions = order_final_four_regions(region_order)
     for region, teams in teams_by_region.items():
         region_teams = sorted(teams, key=lambda t: int(t.get("slot", 99)))
         ordered_first_round = []
@@ -137,10 +147,11 @@ def generate_bracket(
         e8_winners, s16_games = _play_round(s16_winners, strategy, model_scores, base_prob_fn)
         regional_winner_list, e8_games = _play_round(e8_winners, strategy, model_scores, base_prob_fn)
         region_winner = regional_winner_list[0]
-        region_winners.append(region_winner)
+        region_winners[region] = region_winner
         rounds[region] = {"R64": r64_games, "R32": r32_games, "S16": s16_games, "E8": e8_games}
 
-    ff_winners, ff_games = _play_round(region_winners, strategy, model_scores, base_prob_fn)
+    final_four_teams = [region_winners[region] for region in final_four_regions]
+    ff_winners, ff_games = _play_round(final_four_teams, strategy, model_scores, base_prob_fn)
     champion_list, championship_game = _play_round(ff_winners, strategy, model_scores, base_prob_fn)
     champion = champion_list[0]
 
@@ -151,7 +162,7 @@ def generate_bracket(
         "runner_up": (championship_game[0]["lower_seed_team"]
                       if _team_name(champion) == championship_game[0]["higher_seed_team"]
                       else championship_game[0]["higher_seed_team"]),
-        "final_four": [_team_name(team) for team in region_winners],
+        "final_four": [_team_name(region_winners[region]) for region in final_four_regions],
         "rounds": rounds,
         "final_four_games": ff_games,
         "championship_game": championship_game

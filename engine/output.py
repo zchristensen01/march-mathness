@@ -304,6 +304,15 @@ def write_summary_json(summary: dict[str, Any], output_dir: str) -> Path:
     return path
 
 
+def write_matchup_paths_json(matchup_paths: dict[str, Any], output_dir: str) -> Path:
+    """Write top-team tournament path matchup options."""
+    target_dir = Path(output_dir) / "matchup_paths"
+    _ensure_dir(target_dir)
+    path = target_dir / "team_paths.json"
+    path.write_text(json.dumps(matchup_paths, indent=2), encoding="utf-8")
+    return path
+
+
 def write_bracket_pick_sheet(
     rankings: dict[str, pd.DataFrame],
     simulation: dict[str, Any],
@@ -363,7 +372,8 @@ def write_all_outputs(
     config: dict[str, Any],
     all_teams_for_verdicts: list[dict[str, Any]] | None = None,
     win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float] | None = None,
-    bracket_input: dict[str, Any] | None = None
+    bracket_input: dict[str, Any] | None = None,
+    matchup_paths: dict[str, Any] | None = None
 ) -> dict[str, list[str]]:
     """Write all output artifacts and return written path summary."""
     output_dir = config.get("output_dir", "./outputs")
@@ -383,6 +393,8 @@ def write_all_outputs(
 
     written["other"].append(str(write_simulation_json(simulation, output_dir)))
     written["other"].append(str(write_summary_json(summary, output_dir)))
+    if matchup_paths is not None:
+        written["other"].append(str(write_matchup_paths_json(matchup_paths, output_dir)))
 
     if all_teams_for_verdicts is not None and win_prob_fn is not None:
         verdict_path = write_matchup_verdicts_json(

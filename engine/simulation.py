@@ -9,7 +9,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from engine import FIRST_ROUND_MATCHUPS, ROUND_NAMES
+from engine import FIRST_ROUND_MATCHUPS, ROUND_NAMES, order_final_four_regions
 from engine.win_probability import HISTORICAL_ADVANCEMENT_RATES
 
 log = logging.getLogger(__name__)
@@ -94,6 +94,11 @@ def _log_historical_diagnostics(
         log.info("Seed %s advancement diagnostics: %s", seed, ", ".join(comparisons))
 
 
+def _sort_region_teams_by_slot(teams: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sort region teams into bracket slot order before pairing."""
+    return sorted(teams, key=lambda team: int(team.get("slot", 99)))
+
+
 def simulate_bracket(
     bracket: dict[str, list[dict[str, Any]]],
     win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float],
@@ -105,8 +110,10 @@ def simulate_bracket(
     np.random.seed(seed)
 
     regions = list(bracket.keys())
+    final_four_regions = order_final_four_regions(regions)
     normalized_bracket = {
-        region: [_normalize_team_key(team) for team in teams] for region, teams in bracket.items()
+        region: _sort_region_teams_by_slot([_normalize_team_key(team) for team in teams])
+        for region, teams in bracket.items()
     }
 
     reach_count: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -114,7 +121,7 @@ def simulate_bracket(
     total_number_1_seeds_in_final_four = 0
 
     for _ in range(n_sims):
-        region_winners: list[dict[str, Any]] = []
+        region_winners: dict[str, dict[str, Any]] = {}
         for region in regions:
             teams = list(normalized_bracket[region])
 
@@ -136,14 +143,26 @@ def simulate_bracket(
                 e8_teams.append(winner)
 
             region_winner = _play_game(e8_teams[0], e8_teams[1], win_prob_fn, reach_count, "F4")
-            region_winners.append(region_winner)
+            region_winners[region] = region_winner
 
         total_number_1_seeds_in_final_four += sum(
-            1 for team in region_winners if int(team.get("Seed", 16)) == 1
+            1 for team in region_winners.values() if int(team.get("Seed", 16)) == 1
         )
 
-        f4_winner_1 = _play_game(region_winners[0], region_winners[1], win_prob_fn, reach_count, "Championship")
-        f4_winner_2 = _play_game(region_winners[2], region_winners[3], win_prob_fn, reach_count, "Championship")
+        f4_winner_1 = _play_game(
+            region_winners[final_four_regions[0]],
+            region_winners[final_four_regions[1]],
+            win_prob_fn,
+            reach_count,
+            "Championship",
+        )
+        f4_winner_2 = _play_game(
+            region_winners[final_four_regions[2]],
+            region_winners[final_four_regions[3]],
+            win_prob_fn,
+            reach_count,
+            "Championship",
+        )
         _play_game(f4_winner_1, f4_winner_2, win_prob_fn, reach_count, "Champion")
 
     for teams in normalized_bracket.values():
@@ -174,10 +193,13 @@ def generate_modal_bracket(
 ) -> dict[str, dict[str, list[dict[str, Any]]]]:
     """Generate deterministic modal bracket by always taking higher win probability."""
     regions = list(bracket.keys())
-    normalized = {r: [_normalize_team_key(t) for t in teams] for r, teams in bracket.items()}
+    final_four_regions = order_final_four_regions(regions)
+    normalized = {
+        r: _sort_region_teams_by_slot([_normalize_team_key(t) for t in teams]) for r, teams in bracket.items()
+    }
     modal: dict[str, dict[str, list[dict[str, Any]]]] = {}
 
-    region_winners: list[dict[str, Any]] = []
+    region_winners: dict[str, dict[str, Any]] = {}
     for region in regions:
         modal[region] = {"R64": [], "R32": [], "S16": [], "E8": []}
         teams = normalized[region]
@@ -210,12 +232,15 @@ def generate_modal_bracket(
         p_a = float(win_prob_fn(a, b))
         winner = a if p_a >= 0.5 else b
         modal[region]["E8"].append({"team_a": a["Team"], "team_b": b["Team"], "winner": winner["Team"], "prob": max(p_a, 1 - p_a)})
-        region_winners.append(winner)
+        region_winners[region] = winner
 
-    p_a = float(win_prob_fn(region_winners[0], region_winners[1]))
-    winner_ff1 = region_winners[0] if p_a >= 0.5 else region_winners[1]
-    p_b = float(win_prob_fn(region_winners[2], region_winners[3]))
-    winner_ff2 = region_winners[2] if p_b >= 0.5 else region_winners[3]
+    semifinal_a = [region_winners[final_four_regions[0]], region_winners[final_four_regions[1]]]
+    semifinal_b = [region_winners[final_four_regions[2]], region_winners[final_four_regions[3]]]
+
+    p_a = float(win_prob_fn(semifinal_a[0], semifinal_a[1]))
+    winner_ff1 = semifinal_a[0] if p_a >= 0.5 else semifinal_a[1]
+    p_b = float(win_prob_fn(semifinal_b[0], semifinal_b[1]))
+    winner_ff2 = semifinal_b[0] if p_b >= 0.5 else semifinal_b[1]
     p_c = float(win_prob_fn(winner_ff1, winner_ff2))
     champion = winner_ff1 if p_c >= 0.5 else winner_ff2
 
