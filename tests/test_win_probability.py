@@ -1,4 +1,4 @@
-from engine.win_probability import apply_era_seed_prior, production_win_probability, win_probability
+from engine.win_probability import apply_historical_seed_prior, production_win_probability, win_probability
 
 
 def test_probability_clipping() -> None:
@@ -8,9 +8,9 @@ def test_probability_clipping() -> None:
     assert p_low >= 0.03
 
 
-def test_era_prior_lowers_6_seed_edge() -> None:
+def test_historical_prior_lowers_6_seed_edge() -> None:
     raw = win_probability({"AdjEM": 16, "Adj_T": 68, "Seed": 6}, {"AdjEM": 10, "Adj_T": 68, "Seed": 11})
-    adjusted = apply_era_seed_prior(raw, 6, 11)
+    adjusted = apply_historical_seed_prior(raw, 6, 11)
     assert adjusted < raw
 
 

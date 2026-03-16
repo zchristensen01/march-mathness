@@ -16,13 +16,13 @@ from engine.win_probability import predicted_spread
 log = logging.getLogger(__name__)
 
 HISTORICAL_UPSET_RATES: dict[tuple[int, int], float] = {
-    (1, 16): 0.0125,
+    (1, 16): 0.012,
     (2, 15): 0.069,
     (3, 14): 0.144,
     (4, 13): 0.206,
     (5, 12): 0.356,
     (6, 11): 0.388,
-    (7, 10): 0.375,
+    (7, 10): 0.387,
     (8, 9): 0.519
 }
 

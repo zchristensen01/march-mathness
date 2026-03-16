@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from collections import defaultdict
 from typing import Any, Callable
@@ -9,6 +10,9 @@ from typing import Any, Callable
 import numpy as np
 
 from engine import FIRST_ROUND_MATCHUPS, ROUND_NAMES
+from engine.win_probability import HISTORICAL_ADVANCEMENT_RATES
+
+log = logging.getLogger(__name__)
 
 
 def _play_game(
@@ -35,6 +39,61 @@ def _normalize_team_key(team: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _log_historical_diagnostics(
+    normalized_bracket: dict[str, list[dict[str, Any]]],
+    reach_count: dict[str, dict[str, int]],
+    n_sims: int,
+    total_first_round_upsets: int,
+    total_number_1_seeds_in_final_four: int
+) -> None:
+    """Log aggregate simulation diagnostics against historical references."""
+    if n_sims <= 0:
+        return
+
+    team_seed_lookup: dict[str, int] = {}
+    seed_entry_counts: dict[int, int] = defaultdict(int)
+    for teams in normalized_bracket.values():
+        for team in teams:
+            name = str(team.get("Team", ""))
+            seed = int(team.get("Seed", 16))
+            team_seed_lookup[name] = seed
+            seed_entry_counts[seed] += 1
+
+    def seed_round_rate(seed: int, round_name: str) -> float:
+        entrants = seed_entry_counts.get(seed, 0)
+        if entrants == 0:
+            return 0.0
+        total_advancements = 0
+        for team_name, team_seed in team_seed_lookup.items():
+            if team_seed != seed:
+                continue
+            total_advancements += int(reach_count.get(team_name, {}).get(round_name, 0))
+        return float(total_advancements) / float(entrants * n_sims)
+
+    avg_first_round_upsets = float(total_first_round_upsets) / float(n_sims)
+    avg_number_1_seeds_in_final_four = float(total_number_1_seeds_in_final_four) / float(n_sims)
+
+    log.info(
+        "Historical calibration diagnostics: "
+        "R64 upsets(seeds10-16)=%.2f (target 6.50), "
+        "avg #1 seeds in F4=%.2f (target 1.65)",
+        avg_first_round_upsets,
+        avg_number_1_seeds_in_final_four,
+    )
+
+    for seed in (1, 2, 10, 11, 12, 13, 14, 15, 16):
+        historical = HISTORICAL_ADVANCEMENT_RATES.get(seed)
+        if not historical:
+            continue
+        comparisons = []
+        for round_name in ("R32", "S16", "E8", "F4", "Championship", "Champion"):
+            if round_name not in historical:
+                continue
+            sim_rate = seed_round_rate(seed, round_name)
+            comparisons.append(f"{round_name}={sim_rate:.3f} (target {historical[round_name]:.3f})")
+        log.info("Seed %s advancement diagnostics: %s", seed, ", ".join(comparisons))
+
+
 def simulate_bracket(
     bracket: dict[str, list[dict[str, Any]]],
     win_prob_fn: Callable[[dict[str, Any], dict[str, Any]], float],
@@ -51,6 +110,8 @@ def simulate_bracket(
     }
 
     reach_count: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    total_first_round_upsets = 0
+    total_number_1_seeds_in_final_four = 0
 
     for _ in range(n_sims):
         region_winners: list[dict[str, Any]] = []
@@ -61,6 +122,8 @@ def simulate_bracket(
             for slot_a, slot_b in FIRST_ROUND_MATCHUPS:
                 winner = _play_game(teams[slot_a], teams[slot_b], win_prob_fn, reach_count, "R32")
                 r32_teams.append(winner)
+                if int(winner.get("Seed", 16)) >= 10:
+                    total_first_round_upsets += 1
 
             s16_teams = []
             for i in range(0, len(r32_teams), 2):
@@ -75,6 +138,10 @@ def simulate_bracket(
             region_winner = _play_game(e8_teams[0], e8_teams[1], win_prob_fn, reach_count, "F4")
             region_winners.append(region_winner)
 
+        total_number_1_seeds_in_final_four += sum(
+            1 for team in region_winners if int(team.get("Seed", 16)) == 1
+        )
+
         f4_winner_1 = _play_game(region_winners[0], region_winners[1], win_prob_fn, reach_count, "Championship")
         f4_winner_2 = _play_game(region_winners[2], region_winners[3], win_prob_fn, reach_count, "Championship")
         _play_game(f4_winner_1, f4_winner_2, win_prob_fn, reach_count, "Champion")
@@ -82,6 +149,14 @@ def simulate_bracket(
     for teams in normalized_bracket.values():
         for team in teams:
             reach_count[str(team.get("Team"))]["R64"] = n_sims
+
+    _log_historical_diagnostics(
+        normalized_bracket,
+        reach_count,
+        n_sims,
+        total_first_round_upsets,
+        total_number_1_seeds_in_final_four,
+    )
 
     result: dict[str, dict[str, float]] = {}
     for team_name, rounds in reach_count.items():
